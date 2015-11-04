@@ -68,4 +68,11 @@ int ims__receiveMessage (struct soap *soap, struct Message *myMessage){
 }
 
 
+int ims__darAlta (struct soap *soap, struct MensajeAlta msg, int *result) {
+
+	printf("Recibido nombre de usuario: %s\n", msg.username);
+
+	return SOAP_OK;
+}
+
 

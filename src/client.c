@@ -66,6 +66,21 @@ int main(int argc, char **argv){
 		printf ("Received from server: \n\tusername: %s \n\tmsg: %s\n", myMsgB.name, myMsgB.msg);    
 
   	
+	// Probamos a mandar una petición de alta
+	// int ims__darAlta (char username [IMS_MAX_USR_SIZE]);
+	// int ims__sendMessage (struct Message myMessage, int *result);
+	struct MensajeAlta peticion;
+	peticion.username = (xsd__string) malloc(IMS_MAX_USR_SIZE);
+	strcpy(peticion.username, "amiedes");
+    	soap_call_ims__darAlta (&soap, serverURL, "", peticion, &res);
+	  		
+ 	// Check for errors...
+  	if (soap.error) {
+      	soap_print_fault(&soap, stderr); 
+		exit(1);
+  	}
+
+
 	// Clean the environment
   	soap_end(&soap);
   	soap_done(&soap);
