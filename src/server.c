@@ -49,6 +49,17 @@ int main(int argc, char **argv){
 	// Cargamos la información de usuarios
 	if (loadUsersData(&db) == -1) exit(-1);
 
+	// Hacemos una prueba de añadir usuarios
+	char* usr1 = "alberto";
+	char* usr2 = "juan98";
+
+	if(addUser(&db, usr1) == -1) {
+		printf("Error añadiendo a alberto\n");
+	}
+	if (addUser(&db, usr2) == -1) {
+		printf("Error añadiendo a juan\n");
+	}
+	printUsersData(&db);
 
 	// Bind to the specified port. Devuelve el socket primario del servidor.
 	m = soap_bind(&soap, NULL, atoi(argv[1]), 100);
@@ -136,6 +147,7 @@ int loadUsersData(struct datos_usuarios * t) {
 	// Leer los usuarios hasta fin de fichero
 	while (fgets(line, IMS_MAX_USR_SIZE, fichero) != NULL) {
 		//printf("Se ha leido %s\n", line);
+		line[strlen(line)-1] = '\0'; // quitamos el '\n' del fichero
 		strncpy((t->usuarios[nUsr]).username, line, IMS_MAX_USR_SIZE);
 		(t->usuarios[nUsr]).connected = 0;
 		//printf("(t->usuarios[%d]).username -> %s\n", nUsr, (t->usuarios[nUsr]).username);
@@ -175,7 +187,7 @@ int printUsersData(struct datos_usuarios * t) {
 	printf("------------------------------\n");
 	int i;
 	for (i = 0; i < t->nUsers; i++) {
-		printf("Usuario %d: %s", i, t->usuarios[i].username);
+		printf("Usuario %d: %s\n", i, t->usuarios[i].username);
 	}
 	printf("==============================\n");
 	return 0;
@@ -188,6 +200,21 @@ int printUsersData(struct datos_usuarios * t) {
  * @return 0 si éxito, -1 si error, -2 si el usuario ya existe.
  */
 int addUser(struct datos_usuarios * t, xsd__string username) {
+
+	int existe = 0, i = 0;
+
+	// Buscar si existe un usuario con el mismo nombre
+	while (existe == 0 && i < t->nUsers) {
+		if (strcmp(t->usuarios[i].username, username) == 0)
+			existe = 1;
+		i++;
+	}
+	if (existe == 1) return -1;
+
+	// Copiar el nuevo usuario en la estructura
+	strcpy(t->usuarios[i].username, username);
+	t->nUsers++;
+	
 	return 0;
 }
 
