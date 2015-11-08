@@ -29,6 +29,13 @@ int printUsersData(struct datos_usuarios * t);
 int addUser(struct datos_usuarios * t, xsd__string username);
 int deleteUser(struct datos_usuarios * t, xsd__string username);
 
+void clean_stdin(void) {
+	int c;
+	do {
+		c = getchar();
+	} while (c != '\n' && c != EOF);
+}
+
 // -----------------------------------------------------------------------------
 // Main
 // -----------------------------------------------------------------------------
@@ -49,18 +56,6 @@ int main(int argc, char **argv){
 	// Cargamos la información de usuarios
 	if (loadUsersData(&db) == -1) exit(-1);
 
-	// Hacemos una prueba de añadir usuarios
-	char* usr1 = "alberto";
-	char* usr2 = "juan98";
-
-	if(addUser(&db, usr1) == -1) {
-		printf("Error añadiendo a alberto\n");
-	}
-	if (addUser(&db, usr2) == -1) {
-		printf("Error añadiendo a juan\n");
-	}
-	printUsersData(&db);
-
 	// Bind to the specified port. Devuelve el socket primario del servidor.
 	m = soap_bind(&soap, NULL, atoi(argv[1]), 100);
 
@@ -68,6 +63,47 @@ int main(int argc, char **argv){
 	if (m < 0) {
   		soap_print_fault(&soap, stderr);
 		exit(-1);
+	}
+
+	char opcion = -1;
+	while (opcion != '4') {
+		printf("\n\ngSOAP server menu\n");
+		printf("=================\n");
+		printf("1.- Mostrar datos de usuarios\n");
+		printf("2.- Dar de alta un usuario\n");
+		printf("3.- Dar de baja un usuario\n");
+		printf("4.- Ponerse a la escucha (se perderá el control)\n");
+		printf("5.- Salir\n");
+
+		opcion = getchar();
+		clean_stdin();
+
+		if (opcion == '1') {
+			printUsersData(&db);
+		}
+		else if (opcion == '2') {
+			printf("Nombre de usuario:");
+			char name[IMS_MAX_USR_SIZE];
+			scanf("%s", name);
+			name[strlen(name)] = '\0';
+			clean_stdin();
+
+			if(addUser(&db, name) == -1)
+				printf("Error añadiendo a %s\n", name);
+		}
+		else if (opcion == '3') {
+			printf("Todavía no implementado...\n");
+			/*printf("Nombre de usuario:");
+			char* name;
+			scanf("%s", name);
+			fflush(stdin);
+			if(addUser(&db, name) == -1)
+				printf("Error eliminando a %s\n", name);*/
+		}
+		else if (opcion == '5') {
+			saveUsersData(&db);
+			exit(0);
+		}
 	}
 
 	// Listen to next connection
@@ -87,6 +123,9 @@ int main(int argc, char **argv){
 		// Clean up!
 		soap_end(&soap);
 	}
+
+	// Escribimos en el fichero los cambios
+	saveUsersData(&db);
 
 	return 0;
 }
@@ -123,8 +162,6 @@ int ims__darAlta (struct soap *soap, struct MensajeAlta msg, int *result) {
 
 /**
  * Carga los datos de los usuarios desde un fichero.
- * Es responsabilida de esta función reservar memoria para la estructura que
- * almacena la información de los usuarios.
  * @param t Estructura de datos donde cargar la información.
  * @return 0 si éxito, -1 si error
  */
@@ -172,6 +209,32 @@ int loadUsersData(struct datos_usuarios * t) {
  * @return 0 si éxito, -1 si error.
  */
 int saveUsersData(struct datos_usuarios * t) {
+
+	FILE* fichero;
+
+	// Abrir el fichero (sobrescribe)
+	fichero = fopen("usuarios.txt", "wt");
+
+	if (fichero == NULL) {
+		printf("No se encuentra el fichero \"usuarios.txt\"\n");
+		return -1;
+	} else
+		printf("Fichero abierto correctamente.\n");
+
+	// Escribir los datos
+	int i;
+	for (i = 0; i < t->nUsers; i++) {
+		fwrite(t->usuarios[i].username, strlen(t->usuarios[i].username), 1, fichero);
+		fputc('\n',fichero);
+		printf("Escribimos en el fichero --> %s\n", t->usuarios[i].username);
+	}
+
+	// Cerrar el fichero
+	if(fclose(fichero) != 0) {
+		printf("Error cerrando el fichero.\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -214,7 +277,7 @@ int addUser(struct datos_usuarios * t, xsd__string username) {
 	// Copiar el nuevo usuario en la estructura
 	strcpy(t->usuarios[i].username, username);
 	t->nUsers++;
-	
+
 	return 0;
 }
 
