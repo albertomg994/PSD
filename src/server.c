@@ -2,6 +2,7 @@
 
 #include "soapH.h"
 #include "imsService.nsmap"
+#include "stdio.h"
 
 // -----------------------------------------------------------------------------
 // Tipos, constantes y estructuras propias del servidor
@@ -10,7 +11,7 @@
 #define MAX_USERS 100
 
 struct reg_usuario {
-	xsd__string username;
+	char username[IMS_MAX_USR_SIZE];
 	int connected;
 };
 
@@ -35,6 +36,7 @@ int main(int argc, char **argv){
 
 	int m, s;				// sockets
 	struct soap soap;
+	struct datos_usuarios db;	// en mem. estática (todo)
 
 	if (argc < 2) {
 		printf("Usage: %s <port>\n",argv[0]);
@@ -43,6 +45,10 @@ int main(int argc, char **argv){
 
 	// Init environment
 	soap_init(&soap);
+
+	// Cargamos la información de usuarios
+	if (loadUsersData(&db) == -1) exit(-1);
+
 
 	// Bind to the specified port. Devuelve el socket primario del servidor.
 	m = soap_bind(&soap, NULL, atoi(argv[1]), 100);
@@ -104,8 +110,45 @@ int ims__darAlta (struct soap *soap, struct MensajeAlta msg, int *result) {
 	return SOAP_OK;
 }
 
+/**
+ * Carga los datos de los usuarios desde un fichero.
+ * Es responsabilida de esta función reservar memoria para la estructura que
+ * almacena la información de los usuarios.
+ * @param t Estructura de datos donde cargar la información.
+ * @return 0 si éxito, -1 si error
+ */
 int loadUsersData(struct datos_usuarios * t) {
-	if (DEBUG_MODE) printf("loadUsersData()");
+
+	if (DEBUG_MODE) printf("loadUsersData()\n");
+	FILE *fichero;
+	char line[IMS_MAX_USR_SIZE];
+	int nUsr = 0;
+
+	// Abrir el fichero
+	fichero = fopen("usuarios.txt", "rt");
+
+	if (fichero == NULL) {
+		printf("No se encuentra el fichero \"usuarios.txt\"\n");
+		return -1;
+	} else
+		printf("Fichero abierto correctamente.\n");
+
+	// Leer los usuarios hasta fin de fichero
+	while (fgets(line, IMS_MAX_USR_SIZE, fichero) != NULL) {
+		//printf("Se ha leido %s\n", line);
+		strncpy((t->usuarios[nUsr]).username, line, IMS_MAX_USR_SIZE);
+		(t->usuarios[nUsr]).connected = 0;
+		//printf("(t->usuarios[%d]).username -> %s\n", nUsr, (t->usuarios[nUsr]).username);
+		nUsr++;
+	}
+	t->nUsers = nUsr;
+	printUsersData(t);
+
+	// Cerrar el fichero
+	if(fclose(fichero) != 0) {
+		printf("Error cerrando el fichero.\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -127,12 +170,14 @@ int saveUsersData(struct datos_usuarios * t) {
  */
 int printUsersData(struct datos_usuarios * t) {
 
-	/*if (DEBUG_MODE) printf("Hay %d usuarios por imprimir.\n", t->nUsers);
-
-	for (int i = 0; i < t->nUsers; i++) {
-		printf("Usuario %d: %c", i, t->usuarios[i].username);
-	}*/
-
+	printf("==============================\n");
+	printf("Hay %d usuarios.\n", t->nUsers);
+	printf("------------------------------\n");
+	int i;
+	for (i = 0; i < t->nUsers; i++) {
+		printf("Usuario %d: %s", i, t->usuarios[i].username);
+	}
+	printf("==============================\n");
 	return 0;
 }
 

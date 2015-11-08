@@ -8,7 +8,7 @@
 // -----------------------------------------------------------------------------
 #define IMS_MAX_MSG_SIZE 256
 #define IMS_MAX_NAME_SIZE 256
-#define IMS_MAX_USR_SIZE 32
+#define IMS_MAX_USR_SIZE 32		// tam. máximo de nombre de usuario
 
 typedef char *xsd__string;
 
