@@ -92,13 +92,14 @@ int main(int argc, char **argv){
 				printf("Error añadiendo a %s\n", name);
 		}
 		else if (opcion == '3') {
-			printf("Todavía no implementado...\n");
-			/*printf("Nombre de usuario:");
-			char* name;
-			scanf("%s", name);
-			fflush(stdin);
-			if(addUser(&db, name) == -1)
-				printf("Error eliminando a %s\n", name);*/
+			printf("Nombre de usuario:");
+			char name2[IMS_MAX_USR_SIZE];
+			scanf("%s", name2);
+			name2[strlen(name2)] = '\0';
+			clean_stdin();
+
+			if(deleteUser(&db, name2) < 0)
+				printf("Error añadiendo a %s\n", name2);
 		}
 		else if (opcion == '5') {
 			saveUsersData(&db);
