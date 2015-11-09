@@ -288,5 +288,26 @@ int addUser(struct datos_usuarios * t, xsd__string username) {
  * @return 0 si éxito, -1 si error, -2 si el usuario no existía.
  */
 int deleteUser(struct datos_usuarios * t, xsd__string username) {
+
+	int existe = 0, i = 0;
+
+	// Buscar si existe un usuario con el mismo nombre
+	while (existe == 0 && i < t->nUsers) {
+		if (strcmp(t->usuarios[i].username, username) == 0)
+			existe = 1;
+		else
+			i++;
+	}
+
+	// Si no existía, salimos
+	if (existe == 0) return -2;
+
+	// Eliminar el usuario de la estructura (está en el i) (i.e. desplazar el resto)
+	t->nUsers--;
+	for (i; i < t->nUsers; i++) {
+		strcpy(t->usuarios[i].username, t->usuarios[i+1].username); // destino, origen
+		t->usuarios[i].connected = t->usuarios[i+1].connected;
+	}
+
 	return 0;
 }
