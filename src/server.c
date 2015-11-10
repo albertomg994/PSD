@@ -13,12 +13,15 @@
 struct reg_usuario {
 	char username[IMS_MAX_USR_SIZE];
 	int connected;
+	int baja;
 };
 
 struct datos_usuarios {
 	int nUsers;
 	struct reg_usuario usuarios[MAX_USERS];
 };
+
+struct datos_usuarios db;	// en mem. estática (todo)
 
 // -----------------------------------------------------------------------------
 // Cabeceras de funciones
@@ -43,7 +46,6 @@ int main(int argc, char **argv){
 
 	int m, s;				// sockets
 	struct soap soap;
-	struct datos_usuarios db;	// en mem. estática (todo)
 
 	if (argc < 2) {
 		printf("Usage: %s <port>\n",argv[0]);
@@ -154,9 +156,13 @@ int ims__receiveMessage (struct soap *soap, struct Message *myMessage){
 	return SOAP_OK;
 }
 
-int ims__darAlta (struct soap *soap, struct MensajeAlta msg, int *result) {
+int ims__darAlta (struct soap *soap, char* username, int *result) {
 
-	printf("Recibido nombre de usuario: %s\n", msg.username);
+	printf("Recibido nombre de usuario: %s\n", username);
+	*result = addUser(&db, username); //-1 err, -2 no existe
+
+	if (*result >= 0)
+		saveUsersData(&db);
 
 	return SOAP_OK;
 }
@@ -273,7 +279,7 @@ int addUser(struct datos_usuarios * t, xsd__string username) {
 			existe = 1;
 		i++;
 	}
-	if (existe == 1) return -1;
+	if (existe == 1) return -2;
 
 	// Copiar el nuevo usuario en la estructura
 	strcpy(t->usuarios[i].username, username);

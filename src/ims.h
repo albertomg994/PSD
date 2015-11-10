@@ -21,10 +21,6 @@ struct Message{
 	// nombre del emisor?
 };
 
-struct MensajeAlta {
-	xsd__string username;
-};
-
 // -----------------------------------------------------------------------------
 // Servicios
 // -----------------------------------------------------------------------------
@@ -36,6 +32,6 @@ int ims__sendMessage (struct Message myMessage, int *result);
 int ims__receiveMessage (struct Message *myMessage);
 
 // Alta en el sistema
-int ims__darAlta (struct MensajeAlta msg, int *result);
+int ims__darAlta (char* username, int *result);
 
 // Una sola invocación que revise mensajes, peticiones de amistad, avisos de entrega
