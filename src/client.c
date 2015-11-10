@@ -19,6 +19,7 @@ char username_global[IMS_MAX_USR_SIZE]; // para logout()
 void registrarse();
 void iniciarSesion();
 void cerrarSesion();
+void menuAvanzado();
 
 void clean_stdin(void) {
 	int c;
@@ -60,8 +61,7 @@ int main(int argc, char **argv) {
 	do {
 		printf("1.- Registrarse\n");
 		printf("2.- Iniciar sesión\n");
-		printf("3.- Cerrar sesión\n");
-		printf("4.- Salir\n");
+		printf("3.- Salir\n");
 		opcion = getchar();
 		clean_stdin();
 		switch(opcion) {
@@ -72,9 +72,6 @@ int main(int argc, char **argv) {
 				iniciarSesion();
 				break;
 			case '3':
-				cerrarSesion();
-				break;
-			case '4':
 				break;
 			default:
 				break;
@@ -197,7 +194,46 @@ void iniciarSesion() {
 	if (res < 0)
 		printf("El usuario %s no existe.\n", username_global);
 	else
-		printf("Has hecho login.\n");
+		menuAvanzado();
+}
+
+/**
+ * Menu con las opciones para el cliente cuando ya ha iniciado sesión.
+ */
+void menuAvanzado() {
+
+	char opcion;
+
+	do {
+		printf("1.- Enviar mensaje a otro usuario\n");
+		printf("2.- Enviar petición de amistad\n");
+		printf("3.- Consultar peticiones de amistad\n");
+		printf("4.- Ping al servidor\n");
+		printf("5.- Cerrar sesión\n");
+
+		opcion = getchar();
+		clean_stdin();
+
+		switch(opcion) {
+			case '1':
+				printf("Not yet implemented (1)...\n");
+				break;
+			case '2':
+				printf("Not yet implemented (2)...\n");
+				break;
+			case '3':
+				printf("Not yet implemented (3)...\n");
+				break;
+			case '4':
+				printf("Not yet implemented (4)...\n");
+				break;
+			case '5':
+				cerrarSesion();
+				break;
+			default:
+				break;
+		}
+	} while (opcion != '5');
 }
 
 /**
