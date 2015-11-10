@@ -20,6 +20,7 @@ void registrarse();
 void iniciarSesion();
 void cerrarSesion();
 void menuAvanzado();
+void enviarMensaje();
 
 void clean_stdin(void) {
 	int c;
@@ -33,7 +34,7 @@ void clean_stdin(void) {
 // -----------------------------------------------------------------------------
 int main(int argc, char **argv) {
 
-  struct Message myMsgA, myMsgB;
+  struct Message myMsgB;
   char *msg;
 
 	// Usage
@@ -78,28 +79,7 @@ int main(int argc, char **argv) {
 		}
 	} while (opcion != '3');
 
-	// Allocate space for the message field of myMsgA then copy into it
-	/*myMsgA.msg = (xsd__string) malloc (IMS_MAX_MSG_SIZE);
-	// Not necessary with strcpy since uses null-terminated strings
-	// memset(myMsgA.msg, 0, IMS_MAX_MSG_SIZE);
-	strcpy (myMsgA.msg, msg);
-
-	// Allocate space for the name field of myMsgA then copy into it
-	myMsgA.name = (xsd__string) malloc (IMS_MAX_NAME_SIZE);
-	// Not necessary with strcpy since uses null-terminated strings
-	// memset(myMsgA.name, 0, IMS_MAX_NAME_SIZE);
-	strcpy (myMsgA.name, "aClient");
-
-	// Send the contents of myMsgA to the server
-  soap_call_ims__sendMessage (&soap, serverURL, "", myMsgA, &res);
-
-	// Check for errors...
-	if (soap.error) {
-		soap_print_fault(&soap, stderr);
-		exit(1);
-	}
-
-
+	/*
 	// Receive a Message struct from the server into myMsgB
 	soap_call_ims__receiveMessage (&soap, serverURL, "", &myMsgB);
 
@@ -208,15 +188,14 @@ void menuAvanzado() {
 		printf("1.- Enviar mensaje a otro usuario\n");
 		printf("2.- Enviar petición de amistad\n");
 		printf("3.- Consultar peticiones de amistad\n");
-		printf("4.- Ping al servidor\n");
-		printf("5.- Cerrar sesión\n");
+		printf("4.- Cerrar sesión\n");
 
 		opcion = getchar();
 		clean_stdin();
 
 		switch(opcion) {
 			case '1':
-				printf("Not yet implemented (1)...\n");
+				enviarMensaje();
 				break;
 			case '2':
 				printf("Not yet implemented (2)...\n");
@@ -225,15 +204,12 @@ void menuAvanzado() {
 				printf("Not yet implemented (3)...\n");
 				break;
 			case '4':
-				printf("Not yet implemented (4)...\n");
-				break;
-			case '5':
 				cerrarSesion();
 				break;
 			default:
 				break;
 		}
-	} while (opcion != '5');
+	} while (opcion != '4');
 }
 
 /**
@@ -257,4 +233,44 @@ void cerrarSesion() {
 		printf("El usuario %s no existe.\n", username_global);
 	else
 		printf("Has hecho logout.\n");
+}
+
+/**
+ * Envia un mensaje a otro usuario.
+ */
+void enviarMensaje() {
+
+	struct Message2 mensaje;
+	char text[IMS_MAX_MSG_SIZE];
+	char receptor[IMS_MAX_USR_SIZE];
+	int res;
+	
+	// 1. Poner el mensaje
+	printf("Introduce el texto:");
+	scanf("%31s", text);
+	text[strlen(text)] = '\0';
+	clean_stdin();
+	mensaje.msg = malloc (IMS_MAX_MSG_SIZE);
+	strcpy (mensaje.msg, text);
+
+	// 2. Poner el emisor
+	mensaje.emisor = malloc (IMS_MAX_USR_SIZE);
+	strcpy (mensaje.emisor, username_global);
+
+	// 3. Poner el receptor
+	printf("Destinatario:");
+	scanf("%31s", receptor);
+	receptor[strlen(receptor)] = '\0';
+	clean_stdin();
+	mensaje.receptor = malloc (IMS_MAX_USR_SIZE);
+	strcpy(mensaje.receptor, receptor);
+
+	// 4. Llamada gSOAP
+	soap_call_ims__sendMessage (&soap, serverURL, "", mensaje, &res);
+
+	// 5. Comprobar errores
+	if (soap.error) {
+		soap_print_fault(&soap, stderr);
+		exit(1);
+	}
 }

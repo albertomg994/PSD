@@ -133,9 +133,11 @@ int main(int argc, char **argv){
 	return 0;
 }
 
-int ims__sendMessage (struct soap *soap, struct Message myMessage, int *result){
-
-	printf ("Received by server: \n\tusername:%s \n\tmsg:%s\n", myMessage.name, myMessage.msg);
+int ims__sendMessage (struct soap *soap, struct Message2 myMessage, int *result) {
+	printf("Received by server:\n");
+	printf("\temisor: %s\n", myMessage.emisor);
+	printf("\treceptor: %s\n", myMessage.receptor);
+	printf("\ttexto: %s\n", myMessage.msg);
 	return SOAP_OK;
 }
 

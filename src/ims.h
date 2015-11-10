@@ -21,12 +21,18 @@ struct Message{
 	// nombre del emisor?
 };
 
+struct Message2{
+	char* receptor;
+	char* emisor;
+	char* msg;
+};
+
 // -----------------------------------------------------------------------------
 // Servicios
 // -----------------------------------------------------------------------------
 
-// Enviar un mensaje de prueba
-int ims__sendMessage (struct Message myMessage, int *result);
+// Enviar un mensaje a un usuario
+int ims__sendMessage (struct Message2 myMessage, int *result);
 
 // Recibir un mensaje de prueba
 int ims__receiveMessage (struct Message *myMessage);
