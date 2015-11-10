@@ -158,4 +158,26 @@ void registrarse() {
 
 void iniciarSesion() {
 
+	int res;
+
+	// 1. Pedir datos del login
+	printf("Nombre de usuario:");
+	char name[IMS_MAX_USR_SIZE];
+	scanf("%31s", name);
+	name[strlen(name)] = '\0';
+	clean_stdin();
+
+	// 2. Llamar a gSOAP
+	soap_call_ims__login (&soap, serverURL, "", name, &res);
+
+	// 3. Control de errores
+	if (soap.error) {
+		soap_print_fault(&soap, stderr);
+		exit(1);
+	}
+
+	if (res < 0)
+		printf("El usuario %s no existe.\n", name);
+	else
+		printf("Has hecho login.\n");
 }

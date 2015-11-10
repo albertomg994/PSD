@@ -158,12 +158,31 @@ int ims__receiveMessage (struct soap *soap, struct Message *myMessage){
 
 int ims__darAlta (struct soap *soap, char* username, int *result) {
 
-	printf("Recibido nombre de usuario: %s\n", username);
+	if (DEBUG_MODE) printf("Recibido nombre de usuario: %s\n", username);
 	*result = addUser(&db, username); //-1 err, -2 no existe
 
 	if (*result >= 0)
 		saveUsersData(&db);
 
+	return SOAP_OK;
+}
+
+int ims__login (struct soap *soap, char* username, int *result) {
+
+	int existe = 0, i = 0;
+	if (DEBUG_MODE) printf("Recibido nombre de usuario: %s\n", username);
+
+	// Buscar si existe un usuario con el mismo nombre
+	while (existe == 0 && i < db.nUsers) {
+		if (strcmp(db.usuarios[i].username, username) == 0) {
+			existe = 1;
+			db.usuarios[i].connected = 1;
+		}
+		i++;
+	}
+
+	if(existe == 0)
+		*result = -1;
 	return SOAP_OK;
 }
 
