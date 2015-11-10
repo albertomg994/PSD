@@ -37,4 +37,7 @@ int ims__darAlta (char* username, int *result);
 // Login en el sistema
 int ims__login (char* username, int *result);
 
+// Logout del sistema
+int ims__logout (char* username, int *result);
+
 // Una sola invocación que revise mensajes, peticiones de amistad, avisos de entrega

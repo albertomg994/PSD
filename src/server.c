@@ -167,6 +167,12 @@ int ims__darAlta (struct soap *soap, char* username, int *result) {
 	return SOAP_OK;
 }
 
+/**
+ * Marca la sesión de un usuario como iniciada ('connected = 1').
+ * @soap Contexto gSOAP
+ * @param username Nombre del usuario que hace login.
+ * @param result Resultado de la llamada al servicio gSOAP.
+ */
 int ims__login (struct soap *soap, char* username, int *result) {
 
 	int existe = 0, i = 0;
@@ -183,6 +189,37 @@ int ims__login (struct soap *soap, char* username, int *result) {
 
 	if(existe == 0)
 		*result = -1;
+
+	if(DEBUG_MODE) printUsersData(&db);
+
+	return SOAP_OK;
+}
+
+/**
+ * Marca la sesión de un usuario como apagada ('connected = 0').
+ * @soap Contexto gSOAP
+ * @param username Nombre del usuario que hace logout.
+ * @param result Resultado de la llamada al servicio gSOAP.
+ */
+int ims__logout (struct soap *soap, char* username, int *result) {
+
+	int existe = 0, i = 0;
+	if (DEBUG_MODE) printf("Recibido nombre de usuario: %s\n", username);
+
+	// Buscar si existe un usuario con el mismo nombre
+	while (existe == 0 && i < db.nUsers) {
+		if (strcmp(db.usuarios[i].username, username) == 0) {
+			existe = 1;
+			db.usuarios[i].connected = 0;
+		}
+		i++;
+	}
+
+	if(existe == 0)
+		*result = -1;
+
+	if(DEBUG_MODE) printUsersData(&db);
+
 	return SOAP_OK;
 }
 
@@ -276,7 +313,7 @@ int printUsersData(struct datos_usuarios * t) {
 	printf("------------------------------\n");
 	int i;
 	for (i = 0; i < t->nUsers; i++) {
-		printf("Usuario %d: %s\n", i, t->usuarios[i].username);
+		printf("Usuario %d: %s.\t\tConnected = %d\n", i, t->usuarios[i].username, t->usuarios[i].connected);
 	}
 	printf("==============================\n");
 	return 0;

@@ -5,14 +5,20 @@
 // Tipos, constantes y estructuras propias del cliente
 // -----------------------------------------------------------------------------
 #define DEBUG_MODE 1
+
+// -----------------------------------------------------------------------------
+// Variables globales
+// -----------------------------------------------------------------------------
 struct soap soap;
 char* serverURL;
+char username_global[IMS_MAX_USR_SIZE]; // para logout()
 
 // -----------------------------------------------------------------------------
 // Cabeceras de funciones
 // -----------------------------------------------------------------------------
 void registrarse();
 void iniciarSesion();
+void cerrarSesion();
 
 void clean_stdin(void) {
 	int c;
@@ -54,7 +60,8 @@ int main(int argc, char **argv) {
 	do {
 		printf("1.- Registrarse\n");
 		printf("2.- Iniciar sesión\n");
-		printf("3.- Salir\n");
+		printf("3.- Cerrar sesión\n");
+		printf("4.- Salir\n");
 		opcion = getchar();
 		clean_stdin();
 		switch(opcion) {
@@ -65,6 +72,9 @@ int main(int argc, char **argv) {
 				iniciarSesion();
 				break;
 			case '3':
+				cerrarSesion();
+				break;
+			case '4':
 				break;
 			default:
 				break;
@@ -127,6 +137,10 @@ int main(int argc, char **argv) {
 	return 0;
 }
 
+/**
+ * Pide un nombre al usuario para registrarse en el sistema. Si ya existe,
+ * muestra un mensaje de error.
+ */
 void registrarse() {
 
 	int res;
@@ -153,22 +167,26 @@ void registrarse() {
 		printf("Es posible que el nombre de usuario ya exista.\n");
 	else
 		printf("Error del servidor.\n");
-
 }
 
+/**
+ * Pide el nombre de usuario e inicia sesión en la cuenta con dicho nombre.
+ * También establece el valor de la variable global 'username_global'.
+ * En caso de éxito muestra un menu para enviar mensajes.
+ */
 void iniciarSesion() {
 
 	int res;
 
 	// 1. Pedir datos del login
 	printf("Nombre de usuario:");
-	char name[IMS_MAX_USR_SIZE];
-	scanf("%31s", name);
-	name[strlen(name)] = '\0';
+	//char name[IMS_MAX_USR_SIZE];
+	scanf("%31s", username_global);
+	username_global[strlen(username_global)] = '\0';
 	clean_stdin();
 
 	// 2. Llamar a gSOAP
-	soap_call_ims__login (&soap, serverURL, "", name, &res);
+	soap_call_ims__login (&soap, serverURL, "", username_global, &res);
 
 	// 3. Control de errores
 	if (soap.error) {
@@ -177,7 +195,30 @@ void iniciarSesion() {
 	}
 
 	if (res < 0)
-		printf("El usuario %s no existe.\n", name);
+		printf("El usuario %s no existe.\n", username_global);
 	else
 		printf("Has hecho login.\n");
+}
+
+/**
+ * Cierra la sesión del usuario actual. Para obtener el nombre de usuario,
+ * consultamos el valor de la variable global 'username_global'.
+ */
+void cerrarSesion() {
+
+	int res;
+
+	// 1. Llamar a gSOAP
+	soap_call_ims__logout (&soap, serverURL, "", username_global, &res);
+
+	// 2. Control de errores
+	if (soap.error) {
+		soap_print_fault(&soap, stderr);
+		exit(1);
+	}
+
+	if (res < 0)
+		printf("El usuario %s no existe.\n", username_global);
+	else
+		printf("Has hecho logout.\n");
 }
