@@ -21,6 +21,7 @@ void iniciarSesion();
 void cerrarSesion();
 void menuAvanzado();
 void enviarMensaje();
+void sendFriendRequest();
 
 void clean_stdin(void) {
 	int c;
@@ -198,7 +199,7 @@ void menuAvanzado() {
 				enviarMensaje();
 				break;
 			case '2':
-				printf("Not yet implemented (2)...\n");
+				sendFriendRequest();
 				break;
 			case '3':
 				printf("Not yet implemented (3)...\n");
@@ -244,7 +245,7 @@ void enviarMensaje() {
 	char text[IMS_MAX_MSG_SIZE];
 	char receptor[IMS_MAX_USR_SIZE];
 	int res;
-	
+
 	// 1. Poner el mensaje
 	printf("Introduce el texto:");
 	scanf("%31s", text);
@@ -269,6 +270,37 @@ void enviarMensaje() {
 	soap_call_ims__sendMessage (&soap, serverURL, "", mensaje, &res);
 
 	// 5. Comprobar errores
+	if (soap.error) {
+		soap_print_fault(&soap, stderr);
+		exit(1);
+	}
+}
+
+/**
+ * Envía una petición de amistad al usuario que indiquemos.
+ */
+void sendFriendRequest() {
+
+	struct PeticionAmistad pet;
+	char receptor[IMS_MAX_USR_SIZE];
+	int res;
+
+	// 1. Poner el emisor
+	pet.emisor = malloc (IMS_MAX_USR_SIZE);
+	strcpy (pet.emisor, username_global);
+
+	// 2. Poner el receptor
+	printf("Destinatario:");
+	scanf("%31s", receptor);
+	receptor[strlen(receptor)] = '\0';
+	clean_stdin();
+	pet.receptor = malloc (IMS_MAX_USR_SIZE);
+	strcpy(pet.receptor, receptor);
+
+	// 3. Llamada gSOAP
+	soap_call_ims__sendFriendRequest(&soap, serverURL, "", pet, &res);
+
+	// 4. Comprobar errores
 	if (soap.error) {
 		soap_print_fault(&soap, stderr);
 		exit(1);

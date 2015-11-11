@@ -226,6 +226,16 @@ int ims__logout (struct soap *soap, char* username, int *result) {
 }
 
 /**
+ * Servicio gSOAP para enviar peticiones de amistad.
+ */
+int ims__sendFriendRequest (struct soap *soap, struct PeticionAmistad p, int *result) {
+	printf("Received by server:\n");
+	printf("\temisor pet.amistad: %s\n", p.emisor);
+	printf("\treceptor pet.amistad: %s\n", p.receptor);
+	return SOAP_OK;
+}
+
+/**
  * Carga los datos de los usuarios desde un fichero.
  * @param t Estructura de datos donde cargar la información.
  * @return 0 si éxito, -1 si error

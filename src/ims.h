@@ -15,16 +15,26 @@ typedef char *xsd__string;
 // -----------------------------------------------------------------------------
 // Estructuras comunes a cliente y servidor
 // -----------------------------------------------------------------------------
-struct Message{
+struct Message {
 	xsd__string name;
 	xsd__string msg;
-	// nombre del emisor?
 };
 
-struct Message2{
+struct Message2 {
 	char* receptor;
 	char* emisor;
 	char* msg;
+};
+
+struct PeticionAmistad {
+	char* emisor;
+	char* receptor;
+};
+
+struct RespuestaPeticionAmistad {
+	char* emisor;
+	char* receptor;
+	int aceptada;
 };
 
 // -----------------------------------------------------------------------------
@@ -47,3 +57,15 @@ int ims__login (char* username, int *result);
 int ims__logout (char* username, int *result);
 
 // Una sola invocación que revise mensajes, peticiones de amistad, avisos de entrega
+
+// Enviar una petición de amistad
+int ims__sendFriendRequest (struct PeticionAmistad p, int *result);
+
+// Enviar una petición de amistad
+int ims__answerFriendRequest (int* result);
+
+// Recibir todos los mensajes
+int ims__getAllMessages (int* result);
+
+// Recibir todas las peticiones de amistad pendientes
+int ims__getAllFriendRequests (int* result);
