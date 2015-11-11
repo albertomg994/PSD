@@ -9,10 +9,10 @@ Pasos de ejecución:
   1. Generamos los stubs a partir de la interfaz remota (fichero: interfaz.h):
     - $ soapcpp2 -c calc.h.
   2. Añadir a nuestro .bashrc
-        export GSOAP_HOME=$HOME/gsoap-linux_2.8.24
-        export GSOAP_LIB=${GSOAP_HOME}/lib
-        export GSOAP_INCLUDE=${GSOAP_HOME}/include
-        PATH=$PATH:$GSOAP_HOME/bin
+    - export GSOAP_HOME=$HOME/gsoap-linux_2.8.24
+    - export GSOAP_LIB=${GSOAP_HOME}/lib
+    - export GSOAP_INCLUDE=${GSOAP_HOME}/include
+    -  PATH=$PATH:$GSOAP_HOME/bin
   3. Compilamos
     - make --> genera a ./cliente y al ./server
   4. Comunicacion con las maquinas del laboratorio
