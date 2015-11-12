@@ -11,7 +11,7 @@
 // -----------------------------------------------------------------------------
 struct soap soap;
 char* serverURL;
-char username_global[IMS_MAX_USR_SIZE]; // para logout()
+char username_global[IMS_MAX_NAME_SIZE]; // para logout()
 
 // -----------------------------------------------------------------------------
 // Cabeceras de funciones
@@ -94,10 +94,10 @@ int main(int argc, char **argv) {
 
 
 	// Probamos a mandar una petición de alta
-	// int ims__darAlta (char username [IMS_MAX_USR_SIZE]);
+	// int ims__darAlta (char username [IMS_MAX_NAME_SIZE]);
 	// int ims__sendMessage (struct Message myMessage, int *result);
 	struct MensajeAlta peticion;
-	peticion.username = (xsd__string) malloc(IMS_MAX_USR_SIZE);
+	peticion.username = (xsd__string) malloc(IMS_MAX_NAME_SIZE);
 	strcpy(peticion.username, "amiedes");
    soap_call_ims__darAlta (&soap, serverURL, "", peticion, &res);
 
@@ -125,8 +125,8 @@ void registrarse() {
 
 	// 1. Pedir datos para registrarse
 	printf("Nombre de usuario:");
-	char name[IMS_MAX_USR_SIZE];
-	scanf("%31s", name);
+	char name[IMS_MAX_NAME_SIZE];
+	scanf("%255s", name);
 	name[strlen(name)] = '\0';
 	clean_stdin();
 
@@ -158,8 +158,8 @@ void iniciarSesion() {
 
 	// 1. Pedir datos del login
 	printf("Nombre de usuario:");
-	//char name[IMS_MAX_USR_SIZE];
-	scanf("%31s", username_global);
+	//char name[IMS_MAX_NAME_SIZE];
+	scanf("%255s", username_global);
 	username_global[strlen(username_global)] = '\0';
 	clean_stdin();
 
@@ -243,27 +243,27 @@ void enviarMensaje() {
 
 	struct Message2 mensaje;
 	char text[IMS_MAX_MSG_SIZE];
-	char receptor[IMS_MAX_USR_SIZE];
+	char receptor[IMS_MAX_NAME_SIZE];
 	int res;
 
 	// 1. Poner el mensaje
 	printf("Introduce el texto:");
-	scanf("%31s", text);
+	scanf("%255s", text);
 	text[strlen(text)] = '\0';
 	clean_stdin();
 	mensaje.msg = malloc (IMS_MAX_MSG_SIZE);
 	strcpy (mensaje.msg, text);
 
 	// 2. Poner el emisor
-	mensaje.emisor = malloc (IMS_MAX_USR_SIZE);
+	mensaje.emisor = malloc (IMS_MAX_NAME_SIZE);
 	strcpy (mensaje.emisor, username_global);
 
 	// 3. Poner el receptor
 	printf("Destinatario:");
-	scanf("%31s", receptor);
+	scanf("%255s", receptor);
 	receptor[strlen(receptor)] = '\0';
 	clean_stdin();
-	mensaje.receptor = malloc (IMS_MAX_USR_SIZE);
+	mensaje.receptor = malloc (IMS_MAX_NAME_SIZE);
 	strcpy(mensaje.receptor, receptor);
 
 	// 4. Llamada gSOAP
@@ -282,19 +282,19 @@ void enviarMensaje() {
 void sendFriendRequest() {
 
 	struct PeticionAmistad pet;
-	char receptor[IMS_MAX_USR_SIZE];
+	char receptor[IMS_MAX_NAME_SIZE];
 	int res;
 
 	// 1. Poner el emisor
-	pet.emisor = malloc (IMS_MAX_USR_SIZE);
+	pet.emisor = malloc (IMS_MAX_NAME_SIZE);
 	strcpy (pet.emisor, username_global);
 
 	// 2. Poner el receptor
 	printf("Destinatario:");
-	scanf("%31s", receptor);
+	scanf("%255s", receptor);
 	receptor[strlen(receptor)] = '\0';
 	clean_stdin();
-	pet.receptor = malloc (IMS_MAX_USR_SIZE);
+	pet.receptor = malloc (IMS_MAX_NAME_SIZE);
 	strcpy(pet.receptor, receptor);
 
 	// 3. Llamada gSOAP

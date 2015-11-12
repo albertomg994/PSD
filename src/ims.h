@@ -8,7 +8,7 @@
 // -----------------------------------------------------------------------------
 #define IMS_MAX_MSG_SIZE 256
 #define IMS_MAX_NAME_SIZE 256
-#define IMS_MAX_USR_SIZE 32		// tam. máximo de nombre de usuario
+#define IMS_MAX_AMIGOS 32
 
 typedef char *xsd__string;
 
@@ -62,10 +62,10 @@ int ims__logout (char* username, int *result);
 int ims__sendFriendRequest (struct PeticionAmistad p, int *result);
 
 // Enviar una petición de amistad
-int ims__answerFriendRequest (int* result);
+//int ims__answerFriendRequest (int* result);
 
 // Recibir todos los mensajes
-int ims__getAllMessages (int* result);
+//int ims__getAllMessages (int* result);
 
 // Recibir todas las peticiones de amistad pendientes
-int ims__getAllFriendRequests (int* result);
+//int ims__getAllFriendRequests (int* result);

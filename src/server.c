@@ -9,9 +9,11 @@
 // -----------------------------------------------------------------------------
 #define DEBUG_MODE 1
 #define MAX_USERS 100
-
+#define MAX_
 struct reg_usuario {
-	char username[IMS_MAX_USR_SIZE];
+	char username[IMS_MAX_NAME_SIZE];
+	char amigos[IMS_MAX_AMIGOS][IMS_MAX_NAME_SIZE];
+	int numAmigos;
 	int connected;
 	int baja;
 };
@@ -21,6 +23,7 @@ struct datos_usuarios {
 	struct reg_usuario usuarios[MAX_USERS];
 };
 
+
 struct datos_usuarios db;	// en mem. estática (todo)
 
 // -----------------------------------------------------------------------------
@@ -29,6 +32,11 @@ struct datos_usuarios db;	// en mem. estática (todo)
 int loadUsersData(struct datos_usuarios * t);
 int saveUsersData(struct datos_usuarios * t);
 int printUsersData(struct datos_usuarios * t);
+
+int loadFriendsData();
+int saveFriendsData();
+int printFriendsData();
+
 int addUser(struct datos_usuarios * t, xsd__string username);
 int deleteUser(struct datos_usuarios * t, xsd__string username);
 
@@ -85,8 +93,8 @@ int main(int argc, char **argv){
 		}
 		else if (opcion == '2') {
 			printf("Nombre de usuario:");
-			char name[IMS_MAX_USR_SIZE];
-			scanf("%s", name);
+			char name[IMS_MAX_NAME_SIZE];
+			scanf("%255s", name);
 			name[strlen(name)] = '\0';
 			clean_stdin();
 
@@ -95,8 +103,8 @@ int main(int argc, char **argv){
 		}
 		else if (opcion == '3') {
 			printf("Nombre de usuario:");
-			char name2[IMS_MAX_USR_SIZE];
-			scanf("%s", name2);
+			char name2[IMS_MAX_NAME_SIZE];
+			scanf("%255s", name2);
 			name2[strlen(name2)] = '\0';
 			clean_stdin();
 
@@ -244,7 +252,7 @@ int loadUsersData(struct datos_usuarios * t) {
 
 	if (DEBUG_MODE) printf("loadUsersData()\n");
 	FILE *fichero;
-	char line[IMS_MAX_USR_SIZE];
+	char line[IMS_MAX_NAME_SIZE];
 	int nUsr = 0;
 
 	// Abrir el fichero
@@ -257,10 +265,10 @@ int loadUsersData(struct datos_usuarios * t) {
 		printf("Fichero abierto correctamente.\n");
 
 	// Leer los usuarios hasta fin de fichero
-	while (fgets(line, IMS_MAX_USR_SIZE, fichero) != NULL) {
+	while (fgets(line, IMS_MAX_NAME_SIZE, fichero) != NULL) {
 		//printf("Se ha leido %s\n", line);
 		line[strlen(line)-1] = '\0'; // quitamos el '\n' del fichero
-		strncpy((t->usuarios[nUsr]).username, line, IMS_MAX_USR_SIZE);
+		strncpy((t->usuarios[nUsr]).username, line, IMS_MAX_NAME_SIZE);
 		(t->usuarios[nUsr]).connected = 0;
 		//printf("(t->usuarios[%d]).username -> %s\n", nUsr, (t->usuarios[nUsr]).username);
 		nUsr++;
@@ -331,6 +339,28 @@ int printUsersData(struct datos_usuarios * t) {
 	return 0;
 }
 
+/**
+ * Carga en memoria (desde el fichero "amigos.txt"), las listas de amigos de
+ * cada usuario.
+ */
+int loadFriendsData() {
+
+}
+
+/**
+ * Persiste el fichero "amigos.txt" las listas de amigos de cada usuario (ahora
+ * en RAM).
+ */
+int saveFriendsData() {
+
+}
+
+/**
+ * Imprime por pantalla las listas de amigos de todos los usuarios.
+ */
+int printFriendsData() {
+
+}
 /**
  * Añade un usuario al sistema IMS.
  * @param username Nombre del usuario a dar de alta.
