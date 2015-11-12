@@ -23,6 +23,7 @@ void cerrarSesion();
 void menuAvanzado();
 void enviarMensaje();
 void sendFriendRequest();
+void receiveFriendRequests();
 
 // -----------------------------------------------------------------------------
 // Main
@@ -221,7 +222,7 @@ void menuAvanzado() {
 				sendFriendRequest();
 				break;
 			case '3':
-				printf("Not yet implemented (3)...\n");
+				receiveFriendRequests();
 				break;
 			case '4':
 				darBaja();
@@ -270,7 +271,7 @@ void enviarMensaje() {
 
 	// 1. Poner el mensaje
 	printf("Introduce el texto:");
-	scanf("%31s", text);
+	scanf("%255s", text);
 	text[strlen(text)] = '\0';
 	clean_stdin();
 	mensaje.msg = malloc (IMS_MAX_MSG_SIZE);
@@ -282,7 +283,7 @@ void enviarMensaje() {
 
 	// 3. Poner el receptor
 	printf("Destinatario:");
-	scanf("%31s", receptor);
+	scanf("%255s", receptor);
 	receptor[strlen(receptor)] = '\0';
 	clean_stdin();
 	mensaje.receptor = malloc (IMS_MAX_NAME_SIZE);
@@ -313,7 +314,7 @@ void sendFriendRequest() {
 
 	// 2. Poner el receptor
 	printf("Destinatario:");
-	scanf("%31s", receptor);
+	scanf("%255s", receptor);
 	receptor[strlen(receptor)] = '\0';
 	clean_stdin();
 	pet.receptor = malloc (IMS_MAX_NAME_SIZE);
@@ -326,5 +327,32 @@ void sendFriendRequest() {
 	if (soap.error) {
 		soap_print_fault(&soap, stderr);
 		exit(1);
+	}
+}
+
+/**
+ * Pide al servidor las peticiones de amistad pendientes.
+ */
+void receiveFriendRequests() {
+
+	struct RespuestaPeticionesAmistad result;
+
+	// 1. Llamada gSOAP
+	soap_call_ims__getAllFriendRequests (&soap, serverURL, "", username_global, &result);
+
+	// 2. Comprobar errores
+	if (soap.error) {
+		soap_print_fault(&soap, stderr);
+		exit(1);
+	}
+
+	// 3. Interpretar los resultados
+	if (result.nPeticiones == 0)
+		printf("No tienes ninguna petición de amistad pendiente.\n");
+	else {
+		printf("Tienes %d peticiones de amistad pendientes:\n", result.nPeticiones);
+		int i;
+		for (i = 0; i < result.nPeticiones; i++)
+			printf("\t* %s\n", result.peticiones[i]);
 	}
 }

@@ -10,6 +10,7 @@
 #define IMS_MAX_MSG_SIZE 256
 #define IMS_MAX_NAME_SIZE 256
 #define IMS_MAX_AMIGOS 32
+#define MAX_AMISTADES_PENDIENTES 50
 
 typedef char *xsd__string;
 
@@ -38,6 +39,13 @@ struct RespuestaPeticionAmistad {
 	int aceptada;
 };
 
+/* Respuesta del servidor con todas las peticiones de amistad
+	pendientes para un cliente. */
+struct RespuestaPeticionesAmistad {
+	int nPeticiones;
+	char** peticiones;
+	//char peticiones[MAX_AMISTADES_PENDIENTES][IMS_MAX_NAME_SIZE];
+};
 // -----------------------------------------------------------------------------
 // Servicios
 // -----------------------------------------------------------------------------
@@ -72,6 +80,6 @@ int ims__sendFriendRequest (struct PeticionAmistad p, int *result);
 //int ims__getAllMessages (int* result);
 
 // Recibir todas las peticiones de amistad pendientes
-//int ims__getAllFriendRequests (int* result);
+int ims__getAllFriendRequests (char* username, struct RespuestaPeticionesAmistad* result);
 
 #endif

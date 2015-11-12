@@ -13,13 +13,24 @@
 #define DEBUG_MODE 1
 
 struct datos_usuarios db;	// en mem. estática (todo)
+struct amistades_pendientes ap;
+
+struct peticion_amistad {
+	char emisor[IMS_MAX_NAME_SIZE];
+	char destinatario[IMS_MAX_NAME_SIZE];
+};
+
+struct amistades_pendientes {
+	int nPeticiones;
+	struct peticion_amistad amistades_pendientes[MAX_AMISTADES_PENDIENTES];
+};
 
 // -----------------------------------------------------------------------------
 // Cabeceras de funciones
 // -----------------------------------------------------------------------------
-int loadFriendsData();
-int saveFriendsData();
-int printFriendsData();
+int addFriendRequest(struct amistades_pendientes* ap, char* emisor, char* destinatario);
+void delFriendRequest(struct amistades_pendientes* ap, struct peticion_amistad* old);
+void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amistades_pendientes* ap, struct RespuestaPeticionesAmistad* respuesta);
 
 // -----------------------------------------------------------------------------
 // Main
@@ -229,28 +240,107 @@ int ims__sendFriendRequest (struct soap *soap, struct PeticionAmistad p, int *re
 	printf("Received by server:\n");
 	printf("\temisor pet.amistad: %s\n", p.emisor);
 	printf("\treceptor pet.amistad: %s\n", p.receptor);
+
+	if(addFriendRequest(&ap, p.emisor, p.receptor) == 0)
+		printf("Petición añadida con éxito.\n");
+	else
+		printf("Error al añadir la petición.\n");
+
 	return SOAP_OK;
 }
 
 /**
- * Carga en memoria (desde el fichero "amigos.txt"), las listas de amigos de
- * cada usuario.
+ * Servicio gSOAP para pedir las peticiones de amistad pendientes.
  */
-int loadFriendsData() {
+int ims__getAllFriendRequests (struct soap* soap, char* username, struct RespuestaPeticionesAmistad* result) {
+
+	perror("Antes del malloc");
+	//struct RespuestaPeticionesAmistad respuesta;
+	//respuesta.peticiones = malloc(IMS_MAX_NAME_SIZE*MAX_AMISTADES_PENDIENTES);
+
+	// Primer malloc para la estructura
+	result = malloc(sizeof(struct RespuestaPeticionesAmistad));
+	result->peticiones = malloc(IMS_MAX_NAME_SIZE*MAX_AMISTADES_PENDIENTES);
+
+	perror("Después del malloc");
+	result->nPeticiones = 0;
+
+	//perror("Debug 1");
+	//printf("DEBUG: %s\n", respuesta.peticiones[0]);
+	//perror("Debug 2");
+	searchPendingFriendRequests(username, &ap, result);
+
+	//result = &respuesta;
+	return SOAP_OK;
+
+
+	/*struct RespuestaPeticionesAmistad {
+		int nPeticiones;
+		char** peticiones;
+	};*/
+
+	/////////
+	// Allocate space for the message field of the myMessage struct then copy it
+	/*myMessage->msg = (xsd__string) malloc (IMS_MAX_MSG_SIZE);
+	strcpy (myMessage->msg, "Invoking the remote function receiveMessage simply retrieves this standard message from the server"); // always same msg
+
+	// Allocate space for the name field of the myMessage struct then copy it
+	myMessage->name = (xsd__string) malloc (IMS_MAX_NAME_SIZE);
+	strcpy(myMessage->name, "aServer");*/
+	/////////
+}
+
+/**
+ * Añade una petición de amistad al array de peticiones pendientes en el servidor.
+ * @param ap Estructura que almacena las peticiones
+ * @param emisor Emisor de la petición de amistad
+ * @param destinatario Destinatario de la petición de amistad
+ * @return 0 si éxito, -1 si la lista está llena
+ */
+int addFriendRequest(struct amistades_pendientes* ap, char* emisor, char* destinatario) {
+
+	if (ap->nPeticiones >= MAX_AMISTADES_PENDIENTES)
+		return -1;
+
+	/* FALTARÍA CONTROLAR QUE EXISTE EL USUARIO AL QUE ENVIAMOS LA PETICIÓN */
+
+	// Añadir al array
+	strcpy(ap->amistades_pendientes[ap->nPeticiones].emisor, emisor);
+	strcpy(ap->amistades_pendientes[ap->nPeticiones].destinatario, destinatario);
+
+	printf("peticion[%d].emisor = %s\n", ap->nPeticiones, ap->amistades_pendientes[ap->nPeticiones].emisor);
+	printf("peticion[%d].destinatario = %s\n", ap->nPeticiones, ap->amistades_pendientes[ap->nPeticiones].destinatario);
+
+	ap->nPeticiones++;
+
 	return 0;
 }
 
 /**
- * Persiste el fichero "amigos.txt" las listas de amigos de cada usuario (ahora
- * en RAM).
+ * Borra una petición de amistad de la estructura del servidor.
  */
-int saveFriendsData() {
-	return 0;
+void delFriendRequest(struct amistades_pendientes* ap, struct peticion_amistad* old) {
+	// Se invocará desde el ser. gsoap
+	// borra una petición del array
 }
 
 /**
- * Imprime por pantalla las listas de amigos de todos los usuarios.
+ * Busca las peticiones de un usuario y las mete en la estructura.
  */
-int printFriendsData() {
-	return 0;
+void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amistades_pendientes* ap, struct RespuestaPeticionesAmistad* respuesta) {
+
+	perror("searchPendingFriendRequests()");
+
+	int i;
+	for (i = 0; i < ap->nPeticiones; i++) {
+		perror("bucle...");
+		// Si el usuario coincide, añadirlo a la respuesta
+		if(strcmp(username, ap->amistades_pendientes[i].destinatario) == 0) {
+			perror("Hay una con mi nombre.");
+			printf("%s quiere ser mi amigo.\n", ap->amistades_pendientes[i].emisor);
+			strcpy(respuesta->peticiones[respuesta->nPeticiones], ap->amistades_pendientes[i].emisor);
+			respuesta->nPeticiones++;
+		}
+	}
+
 }
