@@ -17,6 +17,7 @@ char username_global[IMS_MAX_NAME_SIZE]; // para logout()
 // Cabeceras de funciones
 // -----------------------------------------------------------------------------
 void registrarse();
+void darBaja();
 void iniciarSesion();
 void cerrarSesion();
 void menuAvanzado();
@@ -131,7 +132,7 @@ void registrarse() {
 	clean_stdin();
 
 	// 2. Llamar a gSOAP
-   soap_call_ims__darAlta (&soap, serverURL, "", name, &res);
+  	soap_call_ims__darAlta (&soap, serverURL, "", name, &res);
 
 	// 3. Control de errores
 	if (soap.error) {
@@ -189,7 +190,8 @@ void menuAvanzado() {
 		printf("1.- Enviar mensaje a otro usuario\n");
 		printf("2.- Enviar petición de amistad\n");
 		printf("3.- Consultar peticiones de amistad\n");
-		printf("4.- Cerrar sesión\n");
+		printf("4.- Dar de Baja\n");
+		printf("5.- Cerrar sesión\n");
 
 		opcion = getchar();
 		clean_stdin();
@@ -205,14 +207,37 @@ void menuAvanzado() {
 				printf("Not yet implemented (3)...\n");
 				break;
 			case '4':
+				darBaja();
+				break;
+			case '5':
 				cerrarSesion();
 				break;
 			default:
 				break;
 		}
-	} while (opcion != '4');
+	} while (opcion != '5' && opcion != '4' );
 }
 
+void darBaja(){
+	int res;
+	// 2. Llamar a gSOAP
+  	soap_call_ims__darBaja (&soap, serverURL, "",username_global, &res);
+
+	// 3. Control de errores
+	if (soap.error) {
+		soap_print_fault(&soap, stderr);
+		exit(1);
+	}
+
+	if (res == 0)
+		printf("El usuario %s se ha dado de baja correctamente.\n", username_global);
+	else if (res == -2)
+		printf("El usuarios no existe.\n");
+	else
+		printf("Error del servidor.\n");
+
+
+}
 /**
  * Cierra la sesión del usuario actual. Para obtener el nombre de usuario,
  * consultamos el valor de la variable global 'username_global'.

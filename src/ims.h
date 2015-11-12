@@ -50,6 +50,9 @@ int ims__receiveMessage (struct Message *myMessage);
 // Alta en el sistema
 int ims__darAlta (char* username, int *result);
 
+// Baja en el sistema
+int ims__darBaja(char* username, int *result);
+
 // Login en el sistema
 int ims__login (char* username, int *result);
 
