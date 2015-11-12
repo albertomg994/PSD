@@ -2,7 +2,8 @@
 //gsoap ims service style: rpc
 //gsoap ims service encoding: encoded
 //gsoap ims service namespace: urn:imsService
-
+#ifndef IMS_H
+#define IMS_H
 // -----------------------------------------------------------------------------
 // Tipos y constantes comunes a cliente y servidor
 // -----------------------------------------------------------------------------
@@ -72,3 +73,5 @@ int ims__sendFriendRequest (struct PeticionAmistad p, int *result);
 
 // Recibir todas las peticiones de amistad pendientes
 //int ims__getAllFriendRequests (int* result);
+
+#endif

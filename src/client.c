@@ -1,5 +1,6 @@
 #include "soapH.h"
 #include "imsService.nsmap"
+#include "externo.h"
 
 // -----------------------------------------------------------------------------
 // Tipos, constantes y estructuras propias del cliente
@@ -17,19 +18,11 @@ char username_global[IMS_MAX_NAME_SIZE]; // para logout()
 // Cabeceras de funciones
 // -----------------------------------------------------------------------------
 void registrarse();
-void darBaja();
 void iniciarSesion();
 void cerrarSesion();
 void menuAvanzado();
 void enviarMensaje();
 void sendFriendRequest();
-
-void clean_stdin(void) {
-	int c;
-	do {
-		c = getchar();
-	} while (c != '\n' && c != EOF);
-}
 
 // -----------------------------------------------------------------------------
 // Main
@@ -127,12 +120,12 @@ void registrarse() {
 	// 1. Pedir datos para registrarse
 	printf("Nombre de usuario:");
 	char name[IMS_MAX_NAME_SIZE];
-	scanf("%255s", name);
+	scanf("%31s", name);
 	name[strlen(name)] = '\0';
 	clean_stdin();
 
 	// 2. Llamar a gSOAP
-  	soap_call_ims__darAlta (&soap, serverURL, "", name, &res);
+   soap_call_ims__darAlta (&soap, serverURL, "", name, &res);
 
 	// 3. Control de errores
 	if (soap.error) {
@@ -149,6 +142,30 @@ void registrarse() {
 }
 
 /**
+ * Da de baja al usuario.
+ */
+void darBaja() {
+
+	int res;
+
+	// 1. Llamar a gSOAP
+   soap_call_ims__darBaja (&soap, serverURL, "", username_global, &res);
+
+	// 2. Control de errores
+	if (soap.error) {
+		soap_print_fault(&soap, stderr);
+		exit(1);
+	}
+
+	if (res == 0)
+		printf("El usuario %s ha sido dado de baja correctamente.\n", username_global);
+	else if (res == -2)
+		printf("El usuario no existe.\n");
+	else
+		printf("Error del servidor.\n");
+}
+
+/**
  * Pide el nombre de usuario e inicia sesión en la cuenta con dicho nombre.
  * También establece el valor de la variable global 'username_global'.
  * En caso de éxito muestra un menu para enviar mensajes.
@@ -160,7 +177,7 @@ void iniciarSesion() {
 	// 1. Pedir datos del login
 	printf("Nombre de usuario:");
 	//char name[IMS_MAX_NAME_SIZE];
-	scanf("%255s", username_global);
+	scanf("%31s", username_global);
 	username_global[strlen(username_global)] = '\0';
 	clean_stdin();
 
@@ -190,7 +207,7 @@ void menuAvanzado() {
 		printf("1.- Enviar mensaje a otro usuario\n");
 		printf("2.- Enviar petición de amistad\n");
 		printf("3.- Consultar peticiones de amistad\n");
-		printf("4.- Dar de Baja\n");
+		printf("4.- Dar de baja\n");
 		printf("5.- Cerrar sesión\n");
 
 		opcion = getchar();
@@ -215,29 +232,9 @@ void menuAvanzado() {
 			default:
 				break;
 		}
-	} while (opcion != '5' && opcion != '4' );
+	} while (opcion != '4'  && opcion != '5');
 }
 
-void darBaja(){
-	int res;
-	// 2. Llamar a gSOAP
-  	soap_call_ims__darBaja (&soap, serverURL, "",username_global, &res);
-
-	// 3. Control de errores
-	if (soap.error) {
-		soap_print_fault(&soap, stderr);
-		exit(1);
-	}
-
-	if (res == 0)
-		printf("El usuario %s se ha dado de baja correctamente.\n", username_global);
-	else if (res == -2)
-		printf("El usuarios no existe.\n");
-	else
-		printf("Error del servidor.\n");
-
-
-}
 /**
  * Cierra la sesión del usuario actual. Para obtener el nombre de usuario,
  * consultamos el valor de la variable global 'username_global'.
@@ -273,7 +270,7 @@ void enviarMensaje() {
 
 	// 1. Poner el mensaje
 	printf("Introduce el texto:");
-	scanf("%255s", text);
+	scanf("%31s", text);
 	text[strlen(text)] = '\0';
 	clean_stdin();
 	mensaje.msg = malloc (IMS_MAX_MSG_SIZE);
@@ -285,7 +282,7 @@ void enviarMensaje() {
 
 	// 3. Poner el receptor
 	printf("Destinatario:");
-	scanf("%255s", receptor);
+	scanf("%31s", receptor);
 	receptor[strlen(receptor)] = '\0';
 	clean_stdin();
 	mensaje.receptor = malloc (IMS_MAX_NAME_SIZE);
@@ -316,7 +313,7 @@ void sendFriendRequest() {
 
 	// 2. Poner el receptor
 	printf("Destinatario:");
-	scanf("%255s", receptor);
+	scanf("%31s", receptor);
 	receptor[strlen(receptor)] = '\0';
 	clean_stdin();
 	pet.receptor = malloc (IMS_MAX_NAME_SIZE);
