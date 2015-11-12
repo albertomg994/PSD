@@ -50,6 +50,9 @@ int ims__receiveMessage (struct Message *myMessage);
 // Alta en el sistema
 int ims__darAlta (char* username, int *result);
 
+// Baja en el sistema
+int ims__darBaja(char* username, int *result);
+
 // Login en el sistema
 int ims__login (char* username, int *result);
 
@@ -62,10 +65,10 @@ int ims__logout (char* username, int *result);
 int ims__sendFriendRequest (struct PeticionAmistad p, int *result);
 
 // Enviar una petición de amistad
-int ims__answerFriendRequest (int* result);
+//int ims__answerFriendRequest (int* result);
 
 // Recibir todos los mensajes
-int ims__getAllMessages (int* result);
+//int ims__getAllMessages (int* result);
 
 // Recibir todas las peticiones de amistad pendientes
-int ims__getAllFriendRequests (int* result);
+//int ims__getAllFriendRequests (int* result);

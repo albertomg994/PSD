@@ -169,6 +169,18 @@ int ims__darAlta (struct soap *soap, char* username, int *result) {
 	return SOAP_OK;
 }
 
+int ims__darBaja(struct soap *soap, char* username, int *result){
+	
+	if (DEBUG_MODE) printf("Recibido nombre de usuario: %s\n", username);
+	*result= deleteUser(&db,username);
+	
+
+	if (*result >= 0)
+		saveUsersData(&db);
+
+	return SOAP_OK;
+}
+
 /**
  * Marca la sesión de un usuario como iniciada ('connected = 1').
  * @soap Contexto gSOAP
