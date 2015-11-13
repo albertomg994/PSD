@@ -335,10 +335,15 @@ void sendFriendRequest() {
  */
 void receiveFriendRequests() {
 
-	struct RespuestaPeticionesAmistad result;
+	struct ListaAmigos lista_amigos;
+
+	/*struct RespuestaPeticionesAmistad {
+		int nPeticiones;
+		xsd__string nombres; 	// Nombres de las personas, separados por ' '
+	};*/
 
 	// 1. Llamada gSOAP
-	soap_call_ims__getAllFriendRequests (&soap, serverURL, "", username_global, &result);
+	soap_call_ims__getAllFriendRequests (&soap, serverURL, "", username_global, &lista_amigos);
 
 	// 2. Comprobar errores
 	if (soap.error) {
@@ -347,12 +352,10 @@ void receiveFriendRequests() {
 	}
 
 	// 3. Interpretar los resultados
-	if (result.nPeticiones == 0)
+	if (lista_amigos.nPeticiones == 0)
 		printf("No tienes ninguna petición de amistad pendiente.\n");
 	else {
-		printf("Tienes %d peticiones de amistad pendientes:\n", result.nPeticiones);
-		int i;
-		for (i = 0; i < result.nPeticiones; i++)
-			printf("\t* %s\n", result.peticiones[i]);
+		printf("Tienes %d peticiones de amistad pendientes:\n", lista_amigos.nPeticiones);
+		printf("Los nombres son: %s\n", lista_amigos.nombres);
 	}
 }

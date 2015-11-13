@@ -30,7 +30,7 @@ struct amistades_pendientes {
 // -----------------------------------------------------------------------------
 int addFriendRequest(struct amistades_pendientes* ap, char* emisor, char* destinatario);
 void delFriendRequest(struct amistades_pendientes* ap, struct peticion_amistad* old);
-void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amistades_pendientes* ap, struct RespuestaPeticionesAmistad* respuesta);
+void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amistades_pendientes* ap, struct ListaAmigos *lista);
 
 // -----------------------------------------------------------------------------
 // Main
@@ -251,76 +251,39 @@ int ims__sendFriendRequest (struct soap *soap, struct PeticionAmistad p, int *re
 
 /**
  * Servicio gSOAP para pedir las peticiones de amistad pendientes.
- * La estructura es así:
-		 struct RespuestaPeticionesAmistad {
-		 	int nPeticiones;
-		 	int __sizePeticiones;	// Nº peticiones
-		 	char** peticiones;
-		 };
+ * 	struct RespuestaPeticionesAmistad {
+	 		int nPeticiones;
+	 		xsd__string nombres;
+ 		};
  */
-int ims__getAllFriendRequests (struct soap* soap, char* username, struct RespuestaPeticionesAmistad* result) {
-
+int ims__getAllFriendRequests (struct soap* soap, char* username, struct ListaAmigos *lista) {
 
 	perror("Reservamos espacio para la estructura");
 
 	// Variable para la respuesta (MEM. DINÁMICA)
 	// --------------------------------------------------------------------------
-	/*struct RespuestaPeticionesAmistad* respuesta;
-	respuesta = malloc(sizeof(struct RespuestaPeticionesAmistad));
-	respuesta->nPeticiones = 0;
-	respuesta->__sizePeticiones = 0;
-	respuesta->peticiones = malloc(IMS_MAX_NAME_SIZE*MAX_AMISTADES_PENDIENTES);*/
-	// --------------------------------------------------------------------------
-
-
-	// Variable para la respuesta (MEMORIA ESTÁTICA)
-	// --------------------------------------------------------------------------
-	struct RespuestaPeticionesAmistad respuesta;
-	respuesta.nPeticiones = 0;
-	respuesta.__sizePeticiones = 0;
-	respuesta.peticiones = malloc(sizeof(char*)*MAX_AMISTADES_PENDIENTES);
-	int j;
-	for (j = 0; j < MAX_AMISTADES_PENDIENTES; j++)
-		respuesta.peticiones[j] = malloc(IMS_MAX_NAME_SIZE);
+	//lista = malloc(sizeof(struct RespuestaPeticionesAmistad));
+	lista->nPeticiones = 0;
+	lista->nombres = (xsd__string) malloc(MAX_AMISTADES_PENDIENTES*IMS_MAX_NAME_SIZE + 1);
 	// --------------------------------------------------------------------------
 
 
 	perror("Rellenamos la estructura");
 	// Rellenar la estructura
 	// --------------------------------------------------------------------------
-	//searchPendingFriendRequests(username, &ap, respuesta); // DINÁMICA
-	searchPendingFriendRequests(username, &ap, &respuesta); // ESTÁTICA
+	searchPendingFriendRequests(username, &ap, lista); // DINÁMICA
 	// --------------------------------------------------------------------------
 
 
 	perror("Mostramos el contenido de la estructura");
 	// Mostrar la estructura (DINÁMICA)
 	// --------------------------------------------------------------------------
-	/*printf("Contenido de la estructura:\n");
-	printf("---------------------------\n");
-	printf("respuesta.nPeticiones = %d\n", respuesta->nPeticiones);
-	printf("respuesta.__sizePeticiones = %d\n", respuesta->__sizePeticiones);
-	int i;
-	for (i = 0; i < respuesta->nPeticiones; i++) {
-		printf("\trespuesta.peticiones[%d] = %s\n", i, respuesta->peticiones[i]);
-	}*/
-	// --------------------------------------------------------------------------
-
-	// Mostrar la estructura (ESTÁTICA)
-	// --------------------------------------------------------------------------
 	printf("Contenido de la estructura:\n");
 	printf("---------------------------\n");
-	printf("respuesta.nPeticiones = %d\n", respuesta.nPeticiones);
-	printf("respuesta.__sizePeticiones = %d\n", respuesta.__sizePeticiones);
-	int i;
-	for (i = 0; i < respuesta.nPeticiones; i++) {
-		printf("\trespuesta.peticiones[%d] = %s\n", i, respuesta.peticiones[i]);
-	}
+	printf("result->nPeticiones = %d\n", lista->nPeticiones);
+	printf("Nombres: %s\n", lista->nombres);
 	// --------------------------------------------------------------------------
 
-	// Mover los punteros
-	//result = respuesta; 	// DINÁMICA
-	result = &respuesta; // ESTÁTICA
 	return SOAP_OK;
 
 	/////////
@@ -371,7 +334,7 @@ void delFriendRequest(struct amistades_pendientes* ap, struct peticion_amistad* 
 /**
  * Busca las peticiones de un usuario y las mete en la estructura.
  */
-void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amistades_pendientes* ap, struct RespuestaPeticionesAmistad* respuesta) {
+void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amistades_pendientes* ap, struct ListaAmigos *lista) {
 
 	perror("searchPendingFriendRequests()");
 
@@ -382,12 +345,14 @@ void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amista
 		if(strcmp(username, ap->amistades_pendientes[i].destinatario) == 0) {
 			perror("Hay una con mi nombre.");
 			printf("%s quiere ser mi amigo.\n", ap->amistades_pendientes[i].emisor);
-			// EN ESTA LÍNEA ESTÁ EL SEGMENTATION FAULT
-			//strcpy(respuesta->peticiones[respuesta->nPeticiones], ap->amistades_pendientes[i].emisor);
-			//strcpy(respuesta->peticiones[i*sizeof(IMS_MAX_NAME_SIZE)], ap->amistades_pendientes[i].emisor);
-			strcpy(respuesta->peticiones[i], ap->amistades_pendientes[i].emisor);
-			respuesta->nPeticiones++;
-			respuesta->__sizePeticiones++;
+
+			strcat(lista->nombres, ap->amistades_pendientes[i].emisor);
+
+			if (i < ap->nPeticiones -1)
+				strcat(lista->nombres, " \0"); // Add space
+
+			lista->nPeticiones++;
+
 		}
 	}
 
