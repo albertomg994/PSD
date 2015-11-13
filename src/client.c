@@ -76,34 +76,6 @@ int main(int argc, char **argv) {
 		}
 	} while (opcion != '3');
 
-	/*
-	// Receive a Message struct from the server into myMsgB
-	soap_call_ims__receiveMessage (&soap, serverURL, "", &myMsgB);
-
-	// Check for errors...
-	if (soap.error) {
-		soap_print_fault(&soap, stderr);
-		exit(1);
-	}
-	else
-		printf ("Received from server: \n\tusername: %s \n\tmsg: %s\n", myMsgB.name, myMsgB.msg);
-
-
-	// Probamos a mandar una petición de alta
-	// int ims__darAlta (char username [IMS_MAX_NAME_SIZE]);
-	// int ims__sendMessage (struct Message myMessage, int *result);
-	struct MensajeAlta peticion;
-	peticion.username = (xsd__string) malloc(IMS_MAX_NAME_SIZE);
-	strcpy(peticion.username, "amiedes");
-   soap_call_ims__darAlta (&soap, serverURL, "", peticion, &res);
-
-	// Check for errors...
-	if (soap.error) {
-		soap_print_fault(&soap, stderr);
-		exit(1);
-	}*/
-
-
 	// Clean the environment
 	soap_end(&soap);
 	soap_done(&soap);
@@ -337,6 +309,9 @@ void sendFriendRequest() {
 void receiveFriendRequests() {
 
 	struct ListaAmigos lista_amigos;
+	char aux[MAX_AMISTADES_PENDIENTES][IMS_MAX_NAME_SIZE];
+	struct RespuestaPeticionAmistad rp;
+	int res;
 
 	// 1. Llamada gSOAP
 	soap_call_ims__getAllFriendRequests (&soap, serverURL, "", username_global, &lista_amigos);
@@ -352,14 +327,45 @@ void receiveFriendRequests() {
 		printf("No tienes ninguna petición de amistad pendiente.\n");
 	else {
 		printf("Tienes %d peticiones de amistad pendientes:\n", lista_amigos.nPeticiones);
-		printf("Los nombres son: %s\n", lista_amigos.nombres);
-
+		printf("------------------------------------------\n");
 	  	char* palabra = strtok (lista_amigos.nombres," ");
-
+		int i = 0;
 		while (palabra != NULL) {
-	   	printf ("%s\n",palabra);
+	   	printf ("\t * %s\n",palabra);
+			strcpy(aux[i], palabra);
 	    	palabra = strtok (NULL, " ");
+			i++;
 	  	}
+		printf("------------------------------------------\n");
+
+		char c;
+		for (i = 0; i < lista_amigos.nPeticiones; i++) {
+
+			// Preguntamos si acepta o declina cada una de las peticiones
+			printf("¿Quieres aceptar la petición de amistad de %s? (s/n)\n", aux[i]);
+			c = getchar();
+			clean_stdin();
+
+			// Rellenamos la estructura que se envía en la llamada gSOAP
+			if (c == 's')
+				rp.aceptada = 1;
+			else
+				rp.aceptada = 0;
+
+			rp.emisor = malloc(IMS_MAX_NAME_SIZE);
+			strcpy(rp.emisor, aux[i]);
+			rp.receptor = malloc(IMS_MAX_NAME_SIZE);
+			strcpy(rp.receptor, username_global);
+
+			// Llamada gSOAP
+			soap_call_ims__answerFriendRequest (&soap, serverURL, "", rp, &res);
+
+			// Comprobar errores
+			if (soap.error) {
+				soap_print_fault(&soap, stderr);
+				exit(1);
+			}
+		}
 
 	}
 }

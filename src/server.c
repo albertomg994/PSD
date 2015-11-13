@@ -1,5 +1,4 @@
 // Alberto Miedes Garcés y Denys Sypko
-
 #include "soapH.h"
 #include "imsService.nsmap"
 #include "stdio.h"
@@ -8,13 +7,16 @@
 #include "s_mensajes.h"
 
 // -----------------------------------------------------------------------------
-// Tipos, constantes y estructuras propias del servidor
+// Tipos, constantes y variables globales
 // -----------------------------------------------------------------------------
 #define DEBUG_MODE 1
 
 struct datos_usuarios db;	// en mem. estática (todo)
 struct amistades_pendientes ap;
 
+// -----------------------------------------------------------------------------
+// Estructuras propias del servidor
+// -----------------------------------------------------------------------------
 struct peticion_amistad {
 	char emisor[IMS_MAX_NAME_SIZE];
 	char destinatario[IMS_MAX_NAME_SIZE];
@@ -275,6 +277,28 @@ int ims__getAllFriendRequests (struct soap* soap, char* username, struct ListaAm
 }
 
 /**
+ * Servicio gSOAP para aceptar o denegar una petición de amistad de un usuario
+ * hacia otro.
+ * @param soap Contexto gSOAP.
+ * @param rp Estructura con la respuesta a la petición de amistad.
+ * @param result Resultado de la llamada al servicio gSOAP.
+ */
+int ims__answerFriendRequest (struct soap* soap, struct RespuestaPeticionAmistad rp, int* result) {
+
+	/* TODO: cuando esté implementada la parte de mensajería, deberá colocar
+	 un mensaje para emisor y receptor informando del resultado de la petición. */
+
+	if(rp.aceptada == 1)
+		printf("%s ha aceptado la petición de amistad de %s.\n", rp.receptor, rp.emisor);
+	else
+		printf("%s ha denegado la petición de amistad de %s.\n", rp.receptor, rp.emisor);
+
+	/* TODO: Faltaría borrar la petición de amistad de la estructura */
+
+	return SOAP_OK;
+}
+
+/**
  * Añade una petición de amistad al array de peticiones pendientes en el servidor.
  * @param ap Estructura que almacena las peticiones
  * @param emisor Emisor de la petición de amistad
@@ -286,7 +310,7 @@ int addFriendRequest(struct amistades_pendientes* ap, char* emisor, char* destin
 	if (ap->nPeticiones >= MAX_AMISTADES_PENDIENTES)
 		return -1;
 
-	/* FALTARÍA CONTROLAR QUE EXISTE EL USUARIO AL QUE ENVIAMOS LA PETICIÓN */
+	/* TODO: Faltaría controlar que existe el usuario al que enviamos la petición */
 
 	// Añadir al array
 	strcpy(ap->amistades_pendientes[ap->nPeticiones].emisor, emisor);
