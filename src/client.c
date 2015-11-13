@@ -1,6 +1,7 @@
 #include "soapH.h"
 #include "imsService.nsmap"
 #include "externo.h"
+#include <string.h>
 
 // -----------------------------------------------------------------------------
 // Tipos, constantes y estructuras propias del cliente
@@ -337,11 +338,6 @@ void receiveFriendRequests() {
 
 	struct ListaAmigos lista_amigos;
 
-	/*struct RespuestaPeticionesAmistad {
-		int nPeticiones;
-		xsd__string nombres; 	// Nombres de las personas, separados por ' '
-	};*/
-
 	// 1. Llamada gSOAP
 	soap_call_ims__getAllFriendRequests (&soap, serverURL, "", username_global, &lista_amigos);
 
@@ -357,5 +353,13 @@ void receiveFriendRequests() {
 	else {
 		printf("Tienes %d peticiones de amistad pendientes:\n", lista_amigos.nPeticiones);
 		printf("Los nombres son: %s\n", lista_amigos.nombres);
+
+	  	char* palabra = strtok (lista_amigos.nombres," ");
+
+		while (palabra != NULL) {
+	   	printf ("%s\n",palabra);
+	    	palabra = strtok (NULL, " ");
+	  	}
+
 	}
 }

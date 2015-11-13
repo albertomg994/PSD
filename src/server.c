@@ -251,50 +251,27 @@ int ims__sendFriendRequest (struct soap *soap, struct PeticionAmistad p, int *re
 
 /**
  * Servicio gSOAP para pedir las peticiones de amistad pendientes.
- * 	struct RespuestaPeticionesAmistad {
-	 		int nPeticiones;
-	 		xsd__string nombres;
- 		};
+ * @param soap Contexto gSOAP.
+ * @param username Nombre de usuario que invoca la llamada.
+ * @param lista Estructura donde se devuelve la lista de peticiones pendientes.
  */
 int ims__getAllFriendRequests (struct soap* soap, char* username, struct ListaAmigos *lista) {
 
-	perror("Reservamos espacio para la estructura");
-
-	// Variable para la respuesta (MEM. DINÁMICA)
-	// --------------------------------------------------------------------------
-	//lista = malloc(sizeof(struct RespuestaPeticionesAmistad));
+	// Variable para la respuesta
+	//lista = malloc(sizeof(struct RespuestaPeticionesAmistad)); CUIDADO!!
 	lista->nPeticiones = 0;
 	lista->nombres = (xsd__string) malloc(MAX_AMISTADES_PENDIENTES*IMS_MAX_NAME_SIZE + 1);
-	// --------------------------------------------------------------------------
 
-
-	perror("Rellenamos la estructura");
 	// Rellenar la estructura
-	// --------------------------------------------------------------------------
-	searchPendingFriendRequests(username, &ap, lista); // DINÁMICA
-	// --------------------------------------------------------------------------
+	searchPendingFriendRequests(username, &ap, lista);
 
-
-	perror("Mostramos el contenido de la estructura");
-	// Mostrar la estructura (DINÁMICA)
-	// --------------------------------------------------------------------------
+	// Mostrar la estructura
 	printf("Contenido de la estructura:\n");
 	printf("---------------------------\n");
 	printf("result->nPeticiones = %d\n", lista->nPeticiones);
 	printf("Nombres: %s\n", lista->nombres);
-	// --------------------------------------------------------------------------
 
 	return SOAP_OK;
-
-	/////////
-	// Allocate space for the message field of the myMessage struct then copy it
-	/*myMessage->msg = (xsd__string) malloc (IMS_MAX_MSG_SIZE);
-	strcpy (myMessage->msg, "Invoking the remote function receiveMessage simply retrieves this standard message from the server"); // always same msg
-
-	// Allocate space for the name field of the myMessage struct then copy it
-	myMessage->name = (xsd__string) malloc (IMS_MAX_NAME_SIZE);
-	strcpy(myMessage->name, "aServer");*/
-	/////////
 }
 
 /**
@@ -333,27 +310,23 @@ void delFriendRequest(struct amistades_pendientes* ap, struct peticion_amistad* 
 
 /**
  * Busca las peticiones de un usuario y las mete en la estructura.
+ * @param username Nombre del usuario que solicita sus peticiones pendientes.
+ * @param ap Puntero a la estructura del servidor con todas las peticiones.
+ * @param lista Puntero a la estructura que devolverá la llamada gSOAP.
  */
 void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amistades_pendientes* ap, struct ListaAmigos *lista) {
 
-	perror("searchPendingFriendRequests()");
-
 	int i;
 	for (i = 0; i < ap->nPeticiones; i++) {
-		perror("bucle...");
 		// Si el usuario coincide, añadirlo a la respuesta
 		if(strcmp(username, ap->amistades_pendientes[i].destinatario) == 0) {
-			perror("Hay una con mi nombre.");
-			printf("%s quiere ser mi amigo.\n", ap->amistades_pendientes[i].emisor);
 
-			strcat(lista->nombres, ap->amistades_pendientes[i].emisor);
+			strcat(lista->nombres, ap->amistades_pendientes[i].emisor);	// Añadir a la lista
 
 			if (i < ap->nPeticiones -1)
 				strcat(lista->nombres, " \0"); // Add space
 
 			lista->nPeticiones++;
-
 		}
 	}
-
 }
