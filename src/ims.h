@@ -43,6 +43,8 @@ struct RespuestaPeticionAmistad {
 	pendientes para un cliente. */
 struct RespuestaPeticionesAmistad {
 	int nPeticiones;
+
+	int __sizePeticiones;	// Nº peticiones
 	char** peticiones;
 	//char peticiones[MAX_AMISTADES_PENDIENTES][IMS_MAX_NAME_SIZE];
 };
