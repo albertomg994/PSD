@@ -14,6 +14,7 @@
 
 struct datos_usuarios db;	// en mem. estática (todo)
 struct amistades_pendientes ap;
+struct listas_amigos la;
 
 // -----------------------------------------------------------------------------
 // Estructuras propias del servidor
@@ -45,6 +46,9 @@ int main(int argc, char **argv){
 
 	// Cargamos la información de usuarios
 	if (loadUsersData(&db) == -1) exit(-1);
+
+	// Cargamos la información de los amigos
+	if (loadFriendsData(&la) == -1) exit(-1);
 
 	// Bind to the specified port. Devuelve el socket primario del servidor.
 	m = soap_bind(&soap, NULL, atoi(argv[1]), 100);

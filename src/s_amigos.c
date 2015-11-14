@@ -76,3 +76,87 @@ void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amista
 		}
 	}
 }
+
+/*
+		struct amigos_usuario {
+			char usuario[IMS_MAX_NAME_SIZE];
+			char amigos[IMS_MAX_AMIGOS];
+		}
+
+		struct listas_amigos {
+			int nUsuarios;
+			struct amigos_usuario[MAX_USERS];
+		}
+*/
+
+/**
+ * Carga la "listas_amigos.txt" a la estructura del servidor.
+ * @param la Puntero a la estructura del servidor.
+ * @return 0 si éxito, -1 si error
+ */
+int loadFriendsData(struct listas_amigos* la) {
+
+	FILE *fichero;
+	char line[IMS_MAX_NAME_SIZE*MAX_USERS + 1];
+
+	// Abrir el fichero
+	fichero = fopen("listas_amigos.txt", "rt");
+
+	if (fichero == NULL) {
+		printf("No se encuentra el fichero \"listas_amigos.txt\"\n");
+		return -1;
+	} else
+		printf("listas_amigos.txt abierto correctamente.\n");
+
+	// Leer los usuarios y sus amigos hasta fin de fichero
+	int nUsr = 0;
+	while (fgets(line, IMS_MAX_NAME_SIZE*MAX_USERS + 1, fichero) != NULL) {
+
+		line[strlen(line)-1] = '\0';	// quitamos el '\n' del fichero
+		printf("Se ha leido: %s\n", line);
+
+		// Split user & friends in the line
+		int nAmigos = 0;
+		char* palabra = strtok (line, " ");
+
+		strcpy(la->listas[nUsr].usuario, palabra);		// Read username
+		palabra = strtok (NULL, " ");							// Read 1st. friend
+
+		while (palabra != NULL) {
+			printf ("\tLeido amigo: %s\n",palabra);
+			strcpy(la->listas[nUsr].amigos[nAmigos], palabra);	// Copy friend
+			nAmigos++;
+			palabra = strtok (NULL, " ");								// Read friend
+		}
+
+		la->listas[nUsr].nAmigos = 0;						// Set num. friends
+		nUsr++;
+	}
+	la->nUsuarios = nUsr;
+
+	printFriendsData(la);
+
+	// Cerrar el fichero
+	if(fclose(fichero) != 0) {
+		printf("Error cerrando el fichero.\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+/**
+ *
+ */
+int saveFriendsData(struct listas_amigos* la) {
+	printf("saveFriendsData()\n");
+	return 0;
+}
+
+/**
+ *
+ */
+int printFriendsData(struct listas_amigos* la) {
+	printf("printFriendsData()\n");
+	return 0;
+}
