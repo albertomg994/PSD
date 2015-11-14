@@ -77,18 +77,6 @@ void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amista
 	}
 }
 
-/*
-		struct amigos_usuario {
-			char usuario[IMS_MAX_NAME_SIZE];
-			char amigos[IMS_MAX_AMIGOS];
-		}
-
-		struct listas_amigos {
-			int nUsuarios;
-			struct amigos_usuario[MAX_USERS];
-		}
-*/
-
 /**
  * Carga la "listas_amigos.txt" a la estructura del servidor.
  * @param la Puntero a la estructura del servidor.
@@ -129,7 +117,7 @@ int loadFriendsData(struct listas_amigos* la) {
 			palabra = strtok (NULL, " ");								// Read friend
 		}
 
-		la->listas[nUsr].nAmigos = 0;						// Set num. friends
+		la->listas[nUsr].nAmigos = nAmigos;						// Set num. friends
 		nUsr++;
 	}
 	la->nUsuarios = nUsr;
@@ -154,9 +142,30 @@ int saveFriendsData(struct listas_amigos* la) {
 }
 
 /**
- *
+ * Imprime el contenido de la estructura del servidor que almacena para cada
+ * usuario, su lista de amigos.
+ * @param la Puntero a la estructura del servidor.
  */
-int printFriendsData(struct listas_amigos* la) {
-	printf("printFriendsData()\n");
-	return 0;
+void printFriendsData(struct listas_amigos* la) {
+
+	printf("======================\n");
+	printf(" * LISTAS DE AMIGOS * \n");
+	printf("======================\n");
+
+	if (la->nUsuarios == 0)
+		printf("\t < vacía > \n");
+	else {
+		int nUsr;
+		for (nUsr = 0; nUsr < la->nUsuarios; nUsr++) {
+			printf(" * %s:\n", la->listas[nUsr].usuario);
+			if (la->listas[nUsr].nAmigos == 0)
+				printf("\t < vacía > \n");
+			else {
+				int nAmigos;
+				for (nAmigos = 0; nAmigos < la->listas[nUsr].nAmigos; nAmigos++)
+					printf("\t- %s\n", la->listas[nUsr].amigos[nAmigos]);
+			}
+		}
+	}
+	printf("----------------------\n");
 }

@@ -42,7 +42,7 @@ void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amista
 
 int loadFriendsData(struct listas_amigos* la);
 int saveFriendsData(struct listas_amigos* la);
-int printFriendsData(struct listas_amigos* la);
+void printFriendsData(struct listas_amigos* la);
 
 
 #endif
