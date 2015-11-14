@@ -31,7 +31,7 @@ struct amistades_pendientes {
 // Cabeceras de funciones
 // -----------------------------------------------------------------------------
 int addFriendRequest(struct amistades_pendientes* ap, char* emisor, char* destinatario);
-void delFriendRequest(struct amistades_pendientes* ap, struct peticion_amistad* old);
+void delFriendRequest(struct amistades_pendientes* ap, char* emisor, char* receptor);
 void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amistades_pendientes* ap, struct ListaAmigos *lista);
 
 // -----------------------------------------------------------------------------
@@ -293,7 +293,8 @@ int ims__answerFriendRequest (struct soap* soap, struct RespuestaPeticionAmistad
 	else
 		printf("%s ha denegado la petición de amistad de %s.\n", rp.receptor, rp.emisor);
 
-	/* TODO: Faltaría borrar la petición de amistad de la estructura */
+	// Borramos la petición de amistad de la estructura en memoria
+	delFriendRequest(&ap, rp.emisor, rp.receptor);
 
 	return SOAP_OK;
 }
@@ -325,11 +326,29 @@ int addFriendRequest(struct amistades_pendientes* ap, char* emisor, char* destin
 }
 
 /**
- * Borra una petición de amistad de la estructura del servidor.
+ * Borra una petición de amistad de la estructura del servidor. Se invoca desde
+ * el servicio gSOAP.
+ * @param ap Puntero a la estructura del servidor.
+ * @param old Petición de amistad a borrar.
  */
-void delFriendRequest(struct amistades_pendientes* ap, struct peticion_amistad* old) {
-	// Se invocará desde el ser. gsoap
-	// borra una petición del array
+void delFriendRequest(struct amistades_pendientes* ap, char* emisor, char* receptor) {
+
+	int i = 0, salir = 0, j;
+
+	// Buscamos la petición que queremos borrar
+	while (salir == 0 && ap->nPeticiones) {
+		if (strcmp(emisor, ap->amistades_pendientes[i].emisor) == 0 &&
+			 strcmp(receptor, ap->amistades_pendientes[i].destinatario) == 0) {
+				 // Desplazar desde i hasta el nPeticiones-2
+				 for (j = i; j < ap->nPeticiones - 1; j++) {
+					 strcpy(ap->amistades_pendientes[j].emisor, ap->amistades_pendientes[j+1].emisor);
+					 strcpy(ap->amistades_pendientes[j].destinatario, ap->amistades_pendientes[j+1].destinatario);
+				 }
+				 ap->nPeticiones--;
+				 salir = 1;
+		}
+		i++;
+	}
 }
 
 /**
