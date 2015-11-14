@@ -5,6 +5,7 @@
 #include "externo.h"
 #include "s_usuarios.h"
 #include "s_mensajes.h"
+#include "s_amigos.h"
 
 // -----------------------------------------------------------------------------
 // Tipos, constantes y variables globales
@@ -17,22 +18,11 @@ struct amistades_pendientes ap;
 // -----------------------------------------------------------------------------
 // Estructuras propias del servidor
 // -----------------------------------------------------------------------------
-struct peticion_amistad {
-	char emisor[IMS_MAX_NAME_SIZE];
-	char destinatario[IMS_MAX_NAME_SIZE];
-};
 
-struct amistades_pendientes {
-	int nPeticiones;
-	struct peticion_amistad amistades_pendientes[MAX_AMISTADES_PENDIENTES];
-};
 
 // -----------------------------------------------------------------------------
 // Cabeceras de funciones
 // -----------------------------------------------------------------------------
-int addFriendRequest(struct amistades_pendientes* ap, char* emisor, char* destinatario);
-void delFriendRequest(struct amistades_pendientes* ap, char* emisor, char* receptor);
-void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amistades_pendientes* ap, struct ListaAmigos *lista);
 
 // -----------------------------------------------------------------------------
 // Main
@@ -297,79 +287,4 @@ int ims__answerFriendRequest (struct soap* soap, struct RespuestaPeticionAmistad
 	delFriendRequest(&ap, rp.emisor, rp.receptor);
 
 	return SOAP_OK;
-}
-
-/**
- * Añade una petición de amistad al array de peticiones pendientes en el servidor.
- * @param ap Estructura que almacena las peticiones
- * @param emisor Emisor de la petición de amistad
- * @param destinatario Destinatario de la petición de amistad
- * @return 0 si éxito, -1 si la lista está llena
- */
-int addFriendRequest(struct amistades_pendientes* ap, char* emisor, char* destinatario) {
-
-	if (ap->nPeticiones >= MAX_AMISTADES_PENDIENTES)
-		return -1;
-
-	/* TODO: Faltaría controlar que existe el usuario al que enviamos la petición */
-
-	// Añadir al array
-	strcpy(ap->amistades_pendientes[ap->nPeticiones].emisor, emisor);
-	strcpy(ap->amistades_pendientes[ap->nPeticiones].destinatario, destinatario);
-
-	printf("peticion[%d].emisor = %s\n", ap->nPeticiones, ap->amistades_pendientes[ap->nPeticiones].emisor);
-	printf("peticion[%d].destinatario = %s\n", ap->nPeticiones, ap->amistades_pendientes[ap->nPeticiones].destinatario);
-
-	ap->nPeticiones++;
-
-	return 0;
-}
-
-/**
- * Borra una petición de amistad de la estructura del servidor. Se invoca desde
- * el servicio gSOAP.
- * @param ap Puntero a la estructura del servidor.
- * @param old Petición de amistad a borrar.
- */
-void delFriendRequest(struct amistades_pendientes* ap, char* emisor, char* receptor) {
-
-	int i = 0, salir = 0, j;
-
-	// Buscamos la petición que queremos borrar
-	while (salir == 0 && ap->nPeticiones) {
-		if (strcmp(emisor, ap->amistades_pendientes[i].emisor) == 0 &&
-			 strcmp(receptor, ap->amistades_pendientes[i].destinatario) == 0) {
-				 // Desplazar desde i hasta el nPeticiones-2
-				 for (j = i; j < ap->nPeticiones - 1; j++) {
-					 strcpy(ap->amistades_pendientes[j].emisor, ap->amistades_pendientes[j+1].emisor);
-					 strcpy(ap->amistades_pendientes[j].destinatario, ap->amistades_pendientes[j+1].destinatario);
-				 }
-				 ap->nPeticiones--;
-				 salir = 1;
-		}
-		i++;
-	}
-}
-
-/**
- * Busca las peticiones de un usuario y las mete en la estructura.
- * @param username Nombre del usuario que solicita sus peticiones pendientes.
- * @param ap Puntero a la estructura del servidor con todas las peticiones.
- * @param lista Puntero a la estructura que devolverá la llamada gSOAP.
- */
-void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amistades_pendientes* ap, struct ListaAmigos *lista) {
-
-	int i;
-	for (i = 0; i < ap->nPeticiones; i++) {
-		// Si el usuario coincide, añadirlo a la respuesta
-		if(strcmp(username, ap->amistades_pendientes[i].destinatario) == 0) {
-
-			strcat(lista->nombres, ap->amistades_pendientes[i].emisor);	// Añadir a la lista
-
-			if (i < ap->nPeticiones -1)
-				strcat(lista->nombres, " \0"); // Add space
-
-			lista->nPeticiones++;
-		}
-	}
 }
