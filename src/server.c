@@ -30,9 +30,6 @@ struct listas_amigos la;
 // -----------------------------------------------------------------------------
 int main(int argc, char **argv){
 
-	s_usuarios();
-	s_mensajes();
-
 	int m, s;				// sockets
 	struct soap soap;
 
@@ -97,6 +94,7 @@ int main(int argc, char **argv){
 		}
 		else if (opcion == '5') {
 			saveUsersData(&db);
+			saveFriendsData(&la);
 			exit(0);
 		}
 	}
@@ -282,8 +280,11 @@ int ims__answerFriendRequest (struct soap* soap, struct RespuestaPeticionAmistad
 	/* TODO: cuando esté implementada la parte de mensajería, deberá colocar
 	 un mensaje para emisor y receptor informando del resultado de la petición. */
 
-	if(rp.aceptada == 1)
+	if(rp.aceptada == 1) {
 		printf("%s ha aceptado la petición de amistad de %s.\n", rp.receptor, rp.emisor);
+		*result = addFriendToList(&la, rp.emisor, rp.receptor);
+		saveFriendsData(&la); /* TODO: esto habrá que quitarlo */
+	}
 	else
 		printf("%s ha denegado la petición de amistad de %s.\n", rp.receptor, rp.emisor);
 

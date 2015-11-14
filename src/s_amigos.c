@@ -134,10 +134,47 @@ int loadFriendsData(struct listas_amigos* la) {
 }
 
 /**
- *
+ * Guarda en un fichero las listas de amigos.
+ * @param la Puntero a la estructura del servidor.
+ * @return 0 si éxito, -1 si error
  */
 int saveFriendsData(struct listas_amigos* la) {
+
 	printf("saveFriendsData()\n");
+
+	// Abrir el fichero (sobrescribe)
+	FILE* fichero = fopen("listas_amigos.txt", "wt");
+
+	if (fichero == NULL) {
+		printf("No se encuentra el fichero \"listas_amigos.txt\"\n");
+		return -1;
+	} else
+		printf("listas_amigos.txt abierto correctamente.\n");
+
+	// Escribir los datos
+	int i, j, numAmigos, numUsuarios = la->nUsuarios;
+	for (i = 0; i < numUsuarios; i++) {
+		// write user
+		fwrite(la->listas[i].usuario, strlen(la->listas[i].usuario), 1, fichero);
+		numAmigos = la->listas[i].nAmigos;
+		if (numAmigos > 0)
+			fputc(' ', fichero);
+
+		// write friends
+		for (j = 0; j < numAmigos; j++) {
+			fwrite(la->listas[i].amigos[j], strlen(la->listas[i].amigos[j]), 1, fichero);
+			if (j < numAmigos -1)
+				fputc(' ', fichero);
+		}
+		fputc('\n',fichero);
+	}
+
+	// Cerrar el fichero
+	if(fclose(fichero) != 0) {
+		printf("Error cerrando el fichero.\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -168,4 +205,45 @@ void printFriendsData(struct listas_amigos* la) {
 		}
 	}
 	printf("----------------------\n");
+}
+
+/*struct amigos_usuario {
+	int nAmigos;
+	char usuario[IMS_MAX_NAME_SIZE];
+	char amigos[IMS_MAX_AMIGOS][IMS_MAX_NAME_SIZE];
+};
+
+struct listas_amigos {
+	int nUsuarios;
+	struct amigos_usuario listas [MAX_USERS];
+};*/
+
+/**
+ * Añade una nueva relación de amistad a la estructura que las almacena.
+ * @param persona1 Primer componente de la relación de amistad.
+ * @param persona2 Segundo componente de la relación de amistad.
+ * @return 0 si éxito, -1 si error
+ */
+int addFriendToList(struct listas_amigos* la, char* persona1, char* persona2) {
+
+	int i = 0, nAmigos, salir = 0;
+	while (i < la->nUsuarios && salir < 2) {
+		if(strcmp(persona1, la->listas[i].usuario) == 0 || strcmp(persona2, la->listas[i].usuario) == 0) {
+			// Añadir al final
+			nAmigos = la->listas[i].nAmigos;
+			if (nAmigos == IMS_MAX_AMIGOS)
+				return -1;
+
+			// Hay que comprobar en que usuario estamos para añadir al otro
+			if (strcmp(persona1, la->listas[i].usuario) == 0)
+				strcpy(la->listas[i].amigos[nAmigos], persona2);
+			else
+				strcpy(la->listas[i].amigos[nAmigos], persona1);
+				
+			la->listas[i].nAmigos++;
+			salir++;
+		}
+		i++;
+	}
+	return 0;
 }

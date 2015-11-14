@@ -360,6 +360,9 @@ void receiveFriendRequests() {
 			// Llamada gSOAP
 			soap_call_ims__answerFriendRequest (&soap, serverURL, "", rp, &res);
 
+			if (res < 0)
+				printf("Ocurrió un error al aceptar la petición e %s.\n", rp.emisor);
+
 			// Comprobar errores
 			if (soap.error) {
 				soap_print_fault(&soap, stderr);
