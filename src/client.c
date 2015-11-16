@@ -313,13 +313,13 @@ void sendFriendRequest() {
  */
 void receiveFriendRequests() {
 
-	struct ListaAmigos lista_amigos;
+	struct ListaPeticiones lista_peticiones;
 	char aux[MAX_AMISTADES_PENDIENTES][IMS_MAX_NAME_SIZE];
 	struct RespuestaPeticionAmistad rp;
 	int res;
 
 	// 1. Llamada gSOAP
-	soap_call_ims__getAllFriendRequests (&soap, serverURL, "", username_global, &lista_amigos);
+	soap_call_ims__getAllFriendRequests (&soap, serverURL, "", username_global, &lista_peticiones);
 
 	// 2. Comprobar errores
 	if (soap.error) {
@@ -328,12 +328,12 @@ void receiveFriendRequests() {
 	}
 
 	// 3. Interpretar los resultados
-	if (lista_amigos.nPeticiones == 0)
+	if (lista_peticiones.nElems == 0)
 		printf("No tienes ninguna petición de amistad pendiente.\n");
 	else {
-		printf("Tienes %d peticiones de amistad pendientes:\n", lista_amigos.nPeticiones);
+		printf("Tienes %d peticiones de amistad pendientes:\n", lista_peticiones.nElems);
 		printf("------------------------------------------\n");
-	  	char* palabra = strtok (lista_amigos.nombres," ");
+	  	char* palabra = strtok (lista_peticiones.peticiones," ");
 		int i = 0;
 		while (palabra != NULL) {
 	   	printf ("\t * %s\n",palabra);
@@ -344,7 +344,7 @@ void receiveFriendRequests() {
 		printf("------------------------------------------\n");
 
 		char c;
-		for (i = 0; i < lista_amigos.nPeticiones; i++) {
+		for (i = 0; i < lista_peticiones.nElems; i++) {
 
 			// Preguntamos si acepta o declina cada una de las peticiones
 			printf("¿Quieres aceptar la petición de amistad de %s? (s/n)\n", aux[i]);
@@ -383,10 +383,10 @@ void receiveFriendRequests() {
  */
 void showFriends() {
 
-	char* lista = malloc(IMS_MAX_NAME_SIZE*IMS_MAX_AMIGOS + 1);
+	struct ListaAmigos mis_amigos;
 
 	// Llamada gSOAP
-	soap_call_ims__getFriendList(&soap, serverURL, "", username_global, lista);
+	soap_call_ims__getFriendList(&soap, serverURL, "", username_global, &mis_amigos);
 
 	// Comprobar errores
 	if (soap.error) {
@@ -397,12 +397,11 @@ void showFriends() {
 	// Mostrar el resultado
 	printf("Tus amigos son:\n");
 	printf("---------------\n");
-	char* amigo = strtok (lista," ");
+	char* amigo = strtok(mis_amigos.amigos, " ");
 	while (amigo != NULL) {
-		printf ("\t - %s\n",amigo);
-		amigo = strtok (NULL, " ");
+		printf ("  - %s\n", amigo);
+		amigo = strtok(NULL, " ");
 	}
 	printf("---------------\n");
 
-	free(lista);
 }

@@ -38,11 +38,12 @@ struct listas_amigos {
 // -----------------------------------------------------------------------------
 int addFriendRequest(struct amistades_pendientes* ap, char* emisor, char* destinatario);
 void delFriendRequest(struct amistades_pendientes* ap, char* emisor, char* receptor);
-void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amistades_pendientes* ap, struct ListaAmigos *lista);
+void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amistades_pendientes* ap, struct ListaPeticiones *lista);
 
 int loadFriendsData(struct listas_amigos* la);
 int saveFriendsData(struct listas_amigos* la);
 void printFriendsData(struct listas_amigos* la);
 
+int getFriendList(char* username, struct listas_amigos* la, char* lista);
 
 #endif

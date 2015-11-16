@@ -41,11 +41,16 @@ struct RespuestaPeticionAmistad {
 
 /* Respuesta del servidor con todas las peticiones de amistad
 	pendientes para un cliente. */
-struct ListaAmigos {
-	int nPeticiones;
-	xsd__string nombres; 	// Nombres de las personas, separados por ' '
+struct ListaPeticiones {
+	int nElems;
+	xsd__string peticiones; 	// Nombres de las personas, separados por ' '
 };
 
+/* Lista de amigos de un usuario. */
+struct ListaAmigos {
+	int nElems;
+	xsd__string amigos;
+};
 
 // -----------------------------------------------------------------------------
 // Servicios
@@ -81,9 +86,9 @@ int ims__answerFriendRequest (struct RespuestaPeticionAmistad rp, int* result);
 //int ims__getAllMessages (int* result);
 
 // Recibir todas las peticiones de amistad pendientes
-int ims__getAllFriendRequests (char* username, struct ListaAmigos *lista);
+int ims__getAllFriendRequests (char* username, struct ListaPeticiones *result);
 
 // Recibir la lista de amigos
-int ims__getFriendList(char* username, char* result);
+int ims__getFriendList(char* username, struct ListaAmigos* result);
 
 #endif

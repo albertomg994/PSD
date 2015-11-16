@@ -249,21 +249,20 @@ int ims__sendFriendRequest (struct soap *soap, struct PeticionAmistad p, int *re
  * @param username Nombre de usuario que invoca la llamada.
  * @param lista Estructura donde se devuelve la lista de peticiones pendientes.
  */
-int ims__getAllFriendRequests (struct soap* soap, char* username, struct ListaAmigos *lista) {
+int ims__getAllFriendRequests (struct soap* soap, char* username, struct ListaPeticiones *result) {
 
 	// Variable para la respuesta
-	//lista = malloc(sizeof(struct RespuestaPeticionesAmistad)); CUIDADO!!
-	lista->nPeticiones = 0;
-	lista->nombres = (xsd__string) malloc(MAX_AMISTADES_PENDIENTES*IMS_MAX_NAME_SIZE + 1);
+	result->nElems = 0;
+	result->peticiones = (xsd__string) malloc(MAX_AMISTADES_PENDIENTES*IMS_MAX_NAME_SIZE + 1);
 
 	// Rellenar la estructura
-	searchPendingFriendRequests(username, &ap, lista);
+	searchPendingFriendRequests(username, &ap, result);
 
 	// Mostrar la estructura
 	printf("Contenido de la estructura:\n");
 	printf("---------------------------\n");
-	printf("result->nPeticiones = %d\n", lista->nPeticiones);
-	printf("Nombres: %s\n", lista->nombres);
+	printf("result->nPeticiones = %d\n", result->nElems);
+	printf("Nombres: %s\n", result->peticiones);
 
 	return SOAP_OK;
 }
@@ -298,11 +297,13 @@ int ims__answerFriendRequest (struct soap* soap, struct RespuestaPeticionAmistad
  * Devuelve la lista de amigos de un usuario.
  * @param soap Contexto gSOAP.
  * @param username Nombre del usuario.
- * @result La lista de amigos, separada por ' '.
+ * @result Estructura con la lista de amigos.
  */
-int ims__getFriendList(struct soap* soap, char* username, char* result) {
-	//result = malloc(IMS_MAX_NAME_SIZE*IMS_MAX_AMIGOS + 1);
+int ims__getFriendList(struct soap* soap, char* username,  struct ListaAmigos* result) {
+
 	/* TODO: arreglar el bug que devuelve lista vacía. */
-	getFriendList(username, &la, result);
+	result->amigos = malloc(IMS_MAX_NAME_SIZE*IMS_MAX_AMIGOS + 1);
+	getFriendList(username, &la, result->amigos);
+
 	return SOAP_OK;
 }

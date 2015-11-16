@@ -60,19 +60,19 @@ void delFriendRequest(struct amistades_pendientes* ap, char* emisor, char* recep
  * @param ap Puntero a la estructura del servidor con todas las peticiones.
  * @param lista Puntero a la estructura que devolverá la llamada gSOAP.
  */
-void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amistades_pendientes* ap, struct ListaAmigos *lista) {
+void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amistades_pendientes* ap, struct ListaPeticiones *lista) {
 
 	int i;
 	for (i = 0; i < ap->nPeticiones; i++) {
 		// Si el usuario coincide, añadirlo a la respuesta
 		if(strcmp(username, ap->amistades_pendientes[i].destinatario) == 0) {
 
-			strcat(lista->nombres, ap->amistades_pendientes[i].emisor);	// Añadir a la lista
+			strcat(lista->peticiones, ap->amistades_pendientes[i].emisor);	// Añadir a la lista
 
 			if (i < ap->nPeticiones -1)
-				strcat(lista->nombres, " \0"); // Add space
+				strcat(lista->peticiones, " \0"); // Add space
 
-			lista->nPeticiones++;
+			lista->nElems++;
 		}
 	}
 }
@@ -239,13 +239,17 @@ int addFriendToList(struct listas_amigos* la, char* persona1, char* persona2) {
 
 /**
  * Devuelve la lista de amigos de un usuario.
+ * @param username Nombre del usuario de quien buscamos los amigos.
+ * @param la Puntero a la estructura del servidor con todas las listas de amigos.
+ * @param lista Parámetro de salida con la lista que nos piden.
  */
 int getFriendList(char* username, struct listas_amigos* la, char* lista) {
-	perror("getFriendList()");
+
 	int i = 0, j, salir = 0;
+	// Buscamos el usuario que nos piden
 	while (i < la->nUsuarios && salir == 0) {
-		perror("while - i ");
 		if (strcmp(username, la->listas[i].usuario) == 0) {
+			// Copiamos todos los amigos del usuario en la lista
 			for (j = 0; j < la->listas[i].nAmigos; j++) {
 				strcat(lista, la->listas[i].amigos[j]);
 				if (j < la->listas[i].nAmigos - 1)
