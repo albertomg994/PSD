@@ -254,6 +254,7 @@ int ims__getAllFriendRequests (struct soap* soap, char* username, struct ListaPe
 	// Variable para la respuesta
 	result->nElems = 0;
 	result->peticiones = (xsd__string) malloc(MAX_AMISTADES_PENDIENTES*IMS_MAX_NAME_SIZE + 1);
+	result->peticiones[0] = '\0'; // Si no lo ponemos, riesgo de violación de segmento.
 
 	// Rellenar la estructura
 	searchPendingFriendRequests(username, &ap, result);
