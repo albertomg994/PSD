@@ -8,17 +8,24 @@
 // -----------------------------------------------------------------------------
 #define DEBUG_MODE 1
 
+struct MisAmigos {
+	int nElems;
+	char amigos[IMS_MAX_AMIGOS][IMS_MAX_NAME_SIZE];
+};
+
 // -----------------------------------------------------------------------------
 // Variables globales
 // -----------------------------------------------------------------------------
 struct soap soap;
 char* serverURL;
 char username_global[IMS_MAX_NAME_SIZE]; // para logout()
+struct MisAmigos mis_amigos;
 
 // -----------------------------------------------------------------------------
 // Cabeceras de funciones
 // -----------------------------------------------------------------------------
 void registrarse();
+void darBaja();
 void iniciarSesion();
 void cerrarSesion();
 void menuAvanzado();
@@ -26,6 +33,7 @@ void enviarMensaje();
 void sendFriendRequest();
 void receiveFriendRequests();
 void showFriends();
+int getFriendList();
 
 // -----------------------------------------------------------------------------
 // Main
@@ -167,8 +175,13 @@ void iniciarSesion() {
 
 	if (res < 0)
 		printf("El usuario %s no existe.\n", username_global);
-	else
-		menuAvanzado();
+	else {
+
+		if (getFriendList() < 0)
+			printf("Error obteniendo tu lista de amigos del servidor.\n");
+		else
+			menuAvanzado();
+	}
 }
 
 /**
@@ -379,29 +392,49 @@ void receiveFriendRequests() {
 }
 
 /**
- *
+ * Imprime la lista de amigos del cliente.
  */
 void showFriends() {
 
-	struct ListaAmigos mis_amigos;
+	printf("Tus amigos son:\n");
+	printf("---------------\n");
+	if (mis_amigos.nElems == 0)
+		printf ("   < No tienes amigos :( > ");
+	else {
+		int i;
+		for (i = 0; i < mis_amigos.nElems; i++)
+			printf ("  - %s\n", mis_amigos.amigos[i]);
+	}
+	printf("---------------\n");
+}
 
-	// Llamada gSOAP
-	soap_call_ims__getFriendList(&soap, serverURL, "", username_global, &mis_amigos);
+/**
+ * Obtiene la lista de amigos del servidor, y la almacena en la estructura que
+ * el cliente tiene habilitada para ello.
+ * @return 0 si éxito, -1 si error.
+ */
+int getFriendList() {
+
+	struct ListaAmigos lista;
+
+	// Obtener mi lista de amigos
+	soap_call_ims__getFriendList(&soap, serverURL, "", username_global, &lista);
 
 	// Comprobar errores
 	if (soap.error) {
 		soap_print_fault(&soap, stderr);
-		exit(1);
+		return -1; //exit(1);
 	}
 
-	// Mostrar el resultado
-	printf("Tus amigos son:\n");
-	printf("---------------\n");
-	char* amigo = strtok(mis_amigos.amigos, " ");
-	while (amigo != NULL) {
-		printf ("  - %s\n", amigo);
-		amigo = strtok(NULL, " ");
-	}
-	printf("---------------\n");
+	// Procesar y meter en la estructura
+	char* amigo = strtok (lista.amigos," ");
+	int i = 0;
+ 	while (amigo != NULL) {
+		strcpy(mis_amigos.amigos[i], amigo);
+	 	amigo = strtok (NULL, " ");
+	 	i++;
+ 	}
 
+	mis_amigos.nElems = i;
+	return 0;
 }

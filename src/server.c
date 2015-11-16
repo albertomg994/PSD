@@ -301,7 +301,6 @@ int ims__answerFriendRequest (struct soap* soap, struct RespuestaPeticionAmistad
  */
 int ims__getFriendList(struct soap* soap, char* username,  struct ListaAmigos* result) {
 
-	/* TODO: arreglar el bug que devuelve lista vacía. */
 	result->amigos = malloc(IMS_MAX_NAME_SIZE*IMS_MAX_AMIGOS + 1);
 	getFriendList(username, &la, result->amigos);
 
