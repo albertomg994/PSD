@@ -293,3 +293,16 @@ int ims__answerFriendRequest (struct soap* soap, struct RespuestaPeticionAmistad
 
 	return SOAP_OK;
 }
+
+/**
+ * Devuelve la lista de amigos de un usuario.
+ * @param soap Contexto gSOAP.
+ * @param username Nombre del usuario.
+ * @result La lista de amigos, separada por ' '.
+ */
+int ims__getFriendList(struct soap* soap, char* username, char* result) {
+	//result = malloc(IMS_MAX_NAME_SIZE*IMS_MAX_AMIGOS + 1);
+	/* TODO: arreglar el bug que devuelve lista vacía. */
+	getFriendList(username, &la, result);
+	return SOAP_OK;
+}

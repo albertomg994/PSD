@@ -83,4 +83,7 @@ int ims__answerFriendRequest (struct RespuestaPeticionAmistad rp, int* result);
 // Recibir todas las peticiones de amistad pendientes
 int ims__getAllFriendRequests (char* username, struct ListaAmigos *lista);
 
+// Recibir la lista de amigos
+int ims__getFriendList(char* username, char* result);
+
 #endif

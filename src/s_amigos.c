@@ -207,17 +207,6 @@ void printFriendsData(struct listas_amigos* la) {
 	printf("----------------------\n");
 }
 
-/*struct amigos_usuario {
-	int nAmigos;
-	char usuario[IMS_MAX_NAME_SIZE];
-	char amigos[IMS_MAX_AMIGOS][IMS_MAX_NAME_SIZE];
-};
-
-struct listas_amigos {
-	int nUsuarios;
-	struct amigos_usuario listas [MAX_USERS];
-};*/
-
 /**
  * Añade una nueva relación de amistad a la estructura que las almacena.
  * @param persona1 Primer componente de la relación de amistad.
@@ -239,9 +228,30 @@ int addFriendToList(struct listas_amigos* la, char* persona1, char* persona2) {
 				strcpy(la->listas[i].amigos[nAmigos], persona2);
 			else
 				strcpy(la->listas[i].amigos[nAmigos], persona1);
-				
+
 			la->listas[i].nAmigos++;
 			salir++;
+		}
+		i++;
+	}
+	return 0;
+}
+
+/**
+ * Devuelve la lista de amigos de un usuario.
+ */
+int getFriendList(char* username, struct listas_amigos* la, char* lista) {
+	perror("getFriendList()");
+	int i = 0, j, salir = 0;
+	while (i < la->nUsuarios && salir == 0) {
+		perror("while - i ");
+		if (strcmp(username, la->listas[i].usuario) == 0) {
+			for (j = 0; j < la->listas[i].nAmigos; j++) {
+				strcat(lista, la->listas[i].amigos[j]);
+				if (j < la->listas[i].nAmigos - 1)
+					strcat(lista, " ");
+			}
+			salir = 1;
 		}
 		i++;
 	}

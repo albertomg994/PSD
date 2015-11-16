@@ -25,6 +25,7 @@ void menuAvanzado();
 void enviarMensaje();
 void sendFriendRequest();
 void receiveFriendRequests();
+void showFriends();
 
 // -----------------------------------------------------------------------------
 // Main
@@ -181,8 +182,9 @@ void menuAvanzado() {
 		printf("1.- Enviar mensaje a otro usuario\n");
 		printf("2.- Enviar petición de amistad\n");
 		printf("3.- Consultar peticiones de amistad\n");
-		printf("4.- Dar de baja\n");
-		printf("5.- Cerrar sesión\n");
+		printf("4.- Ver amigos\n");
+		printf("5.- Dar de baja\n");
+		printf("6.- Cerrar sesión\n");
 
 		opcion = getchar();
 		clean_stdin();
@@ -198,15 +200,18 @@ void menuAvanzado() {
 				receiveFriendRequests();
 				break;
 			case '4':
-				darBaja();
+				showFriends();
 				break;
 			case '5':
+				darBaja();
+				break;
+			case '6':
 				cerrarSesion();
 				break;
 			default:
 				break;
 		}
-	} while (opcion != '4'  && opcion != '5');
+	} while (opcion != '5'  && opcion != '6');
 }
 
 /**
@@ -371,4 +376,33 @@ void receiveFriendRequests() {
 		}
 
 	}
+}
+
+/**
+ *
+ */
+void showFriends() {
+
+	char* lista = malloc(IMS_MAX_NAME_SIZE*IMS_MAX_AMIGOS + 1);
+
+	// Llamada gSOAP
+	soap_call_ims__getFriendList(&soap, serverURL, "", username_global, lista);
+
+	// Comprobar errores
+	if (soap.error) {
+		soap_print_fault(&soap, stderr);
+		exit(1);
+	}
+
+	// Mostrar el resultado
+	printf("Tus amigos son:\n");
+	printf("---------------\n");
+	char* amigo = strtok (lista," ");
+	while (amigo != NULL) {
+		printf ("\t - %s\n",amigo);
+		amigo = strtok (NULL, " ");
+	}
+	printf("---------------\n");
+
+	free(lista);
 }
