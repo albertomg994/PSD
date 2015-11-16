@@ -303,6 +303,8 @@ int ims__answerFriendRequest (struct soap* soap, struct RespuestaPeticionAmistad
 int ims__getFriendList(struct soap* soap, char* username,  struct ListaAmigos* result) {
 
 	result->amigos = malloc(IMS_MAX_NAME_SIZE*IMS_MAX_AMIGOS + 1);
+	result->amigos[0] = '\0'; // Si no lo ponemos, violación de segmento al strcat()
+
 	getFriendList(username, &la, result->amigos);
 
 	return SOAP_OK;
