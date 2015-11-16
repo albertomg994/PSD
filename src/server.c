@@ -128,10 +128,13 @@ int ims__sendMessage (struct soap *soap, struct Message2 myMessage, int *result)
 	printf("\temisor: %s\n", myMessage.emisor);
 	printf("\treceptor: %s\n", myMessage.receptor);
 	printf("\ttexto: %s\n", myMessage.msg);
+
+	*result = sendMessage (myMessage);
+
 	return SOAP_OK;
 }
 
-int ims__receiveMessage (struct soap *soap, struct Message *myMessage){
+int ims__receiveMessage (struct soap* soap, char* username, char* result){
 
 	// Allocate space for the message field of the myMessage struct then copy it
 	myMessage->msg = (xsd__string) malloc (IMS_MAX_MSG_SIZE);

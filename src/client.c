@@ -26,6 +26,7 @@ void enviarMensaje();
 void sendFriendRequest();
 void receiveFriendRequests();
 void showFriends();
+void recibirMensaje();
 
 // -----------------------------------------------------------------------------
 // Main
@@ -208,6 +209,9 @@ void menuAvanzado() {
 			case '6':
 				cerrarSesion();
 				break;
+         case '7':
+            recibirMensaje();
+            break;
 			default:
 				break;
 		}
@@ -405,4 +409,18 @@ void showFriends() {
 	printf("---------------\n");
 
 	free(lista);
+}
+
+void recibirMensaje(){
+   char* lista = malloc( (IMS_MAX_NAME_SIZE+IMS_MAX_MSG_SIZE)*MAX_MENSAJES);
+
+   // Llamada gSOAP
+   soap_call_ims__receiveMessage(&soap, serverURL, "", username_global, lista);
+
+   // Comprobar errores
+	if (soap.error) {
+		soap_print_fault(&soap, stderr);
+		exit(1);
+	}
+   
 }

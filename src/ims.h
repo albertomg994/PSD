@@ -11,6 +11,7 @@
 #define IMS_MAX_NAME_SIZE 256
 #define IMS_MAX_AMIGOS 32
 #define MAX_AMISTADES_PENDIENTES 50
+#define MAX_MENSAJES 50
 
 typedef char *xsd__string;
 
@@ -55,7 +56,7 @@ struct ListaAmigos {
 int ims__sendMessage (struct Message2 myMessage, int *result);
 
 // Recibir un mensaje de prueba
-int ims__receiveMessage (struct Message *myMessage);
+int ims__receiveMessage (char* username, char* result);
 
 // Alta en el sistema
 int ims__darAlta (char* username, int *result);
