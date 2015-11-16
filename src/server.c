@@ -128,10 +128,20 @@ int ims__sendMessage (struct soap *soap, struct Message2 myMessage, int *result)
 	printf("\temisor: %s\n", myMessage.emisor);
 	printf("\treceptor: %s\n", myMessage.receptor);
 	printf("\ttexto: %s\n", myMessage.msg);
+
+	*result = sendMessage (myMessage);
+
 	return SOAP_OK;
 }
 
+/* TODO: esto no compila porque hice el merge con la rama de denys todavía a
+   medias. Antes la cabecera de la función era:
 int ims__receiveMessage (struct soap *soap, struct Message *myMessage){
+	y por eso ahora no compila.
+
+						(CORREGIR CUANDO SE PUEDA)
+*/
+int ims__receiveMessage (struct soap* soap, char* username, char* result){
 
 	// Allocate space for the message field of the myMessage struct then copy it
 	myMessage->msg = (xsd__string) malloc (IMS_MAX_MSG_SIZE);

@@ -1,6 +1,9 @@
 #include "s_usuarios.h"
 #include "externo.h"
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 // -----------------------------------------------------------------------------
 // Implementación de funciones
 // -----------------------------------------------------------------------------
@@ -117,15 +120,43 @@ int printUsersData(struct datos_usuarios * t) {
  */
 int addUser(struct datos_usuarios * t, xsd__string username) {
 
-	int existe = 0, i = 0;
-
+	int existe = 0, i = 0,dir;
+  FILE *fichero;
 	// Buscar si existe un usuario con el mismo nombre
 	while (existe == 0 && i < t->nUsers) {
 		if (strcmp(t->usuarios[i].username, username) == 0)
 			existe = 1;
 		i++;
 	}
-	if (existe == 1) return -2;
+
+  if (existe == 1) return -2;
+
+  /*Lo hago despues de comprobacion para asegurar que el usuario no existe */
+  dir=mkdir(username,0777);
+
+  if(dir!=0){
+    perror("Error al crear la carpeta\n");
+    return -1;
+  }
+
+  chdir(username);
+  fichero = fopen("mensajes_pendientes.txt", "wt");
+  if (fichero == NULL) {
+    printf("No se encuentra el fichero \"usuarios.txt\"\n");
+    return -1;
+   } else
+      printf("Fichero abierto correctamente.\n");
+   // Cerrar el fichero
+   if(fclose(fichero) != 0) {
+      printf("Error cerrando el fichero.\n");
+    	return -1;
+   }
+
+    chdir("..");
+    printf("Sea ha creado la carpeta %s\n",username);
+
+
+
 
 	// Copiar el nuevo usuario en la estructura
 	strcpy(t->usuarios[i].username, username);
