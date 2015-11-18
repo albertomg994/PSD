@@ -18,23 +18,28 @@ struct MisAmigos {
 // -----------------------------------------------------------------------------
 struct soap soap;
 char* serverURL;
-char username_global[IMS_MAX_NAME_SIZE]; // para logout()
+char username_global[IMS_MAX_NAME_SIZE];
 struct MisAmigos mis_amigos;
 
 // -----------------------------------------------------------------------------
 // Cabeceras de funciones
 // -----------------------------------------------------------------------------
+// Altas y bajas
 void registrarse();
 void darBaja();
+// Login y logout
 void iniciarSesion();
 void cerrarSesion();
-void menuAvanzado();
+// Mensajes
 void enviarMensaje();
+void recibirMensaje();
+// Gestión de amistades
 void sendFriendRequest();
 void receiveFriendRequests();
 void showFriends();
 int getFriendList();
-void recibirMensaje();
+// Otros
+void menuAvanzado();
 
 // -----------------------------------------------------------------------------
 // Main
@@ -126,7 +131,7 @@ void registrarse() {
  */
 void darBaja() {
 
-	int res;
+	struct ResultMsg res;
 
 	// 1. Llamar a gSOAP
    soap_call_ims__darBaja (&soap, serverURL, "", username_global, &res);
@@ -137,12 +142,7 @@ void darBaja() {
 		exit(1);
 	}
 
-	if (res == 0)
-		printf("El usuario %s ha sido dado de baja correctamente.\n", username_global);
-	else if (res == -2)
-		printf("El usuario no existe.\n");
-	else
-		printf("Error del servidor.\n");
+	printf("%s\n", res.msg);
 }
 
 /**
@@ -303,7 +303,7 @@ void sendFriendRequest() {
 	strcpy (pet.emisor, username_global);
 
 	// 2. Poner el receptor
-	printf("Destinatario:");
+	printf("Destinatario: ");
 	scanf("%255s", receptor);
 	receptor[strlen(receptor)] = '\0';
 	clean_stdin();

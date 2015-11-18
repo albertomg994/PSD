@@ -7,15 +7,6 @@
 // -----------------------------------------------------------------------------
 // Implementación de funciones
 // -----------------------------------------------------------------------------
-
-/**
- * Función de prueba
- */
-void s_usuarios()
-{
-    printf("Se ha ejecutado la función s_usuarios!");
-}
-
 /**
  * Carga los datos de los usuarios desde un fichero.
  * @param t Estructura de datos donde cargar la información.
@@ -169,28 +160,21 @@ int addUser(struct datos_usuarios * t, xsd__string username) {
  * Elimina un usuario del sistema IMS.
  * @param username Nombre del usuario a dar de baja.
  * @param t Puntero a la estructura de datos.
- * @return 0 si éxito, -1 si error, -2 si el usuario no existía.
+ * @return 0 si éxito, -1 si error si el usuario no existía.
  */
 int deleteUser(struct datos_usuarios * t, xsd__string username) {
 
-	int existe = 0, i = 0;
-
 	// Buscar si existe un usuario con el mismo nombre
-	while (existe == 0 && i < t->nUsers) {
-		if (strcmp(t->usuarios[i].username, username) == 0)
-			existe = 1;
-		else
-			i++;
-	}
+	int pos = searchUserInUserList(t, username);
 
 	// Si no existía, salimos
-	if (existe == 0) return -2;
+	if (pos < 0) return -1;
 
-	// Eliminar el usuario de la estructura (está en el i) (i.e. desplazar el resto)
+	// Eliminar el usuario de la estructura (i.e. desplazar el resto)
 	t->nUsers--;
-	for (i; i < t->nUsers; i++) {
-		strcpy(t->usuarios[i].username, t->usuarios[i+1].username); // destino, origen
-		t->usuarios[i].connected = t->usuarios[i+1].connected;
+	for (pos; pos < t->nUsers; pos++) {
+		strcpy(t->usuarios[pos].username, t->usuarios[pos+1].username); // destino, origen
+		t->usuarios[pos].connected = t->usuarios[pos+1].connected;
 	}
 
 	return 0;
@@ -200,15 +184,18 @@ int deleteUser(struct datos_usuarios * t, xsd__string username) {
  * Busca el nombre de un usuario en la estructura del servidor.
  * @param t Punteor a la estructura
  * @param username Nombre del usuario a Buscar
- * @return 0 si existe, -1 si no existe.
+ * @return -1 si no existe, la posición donde está si existe.
  */
-int searchUser(struct datos_usuarios * t, xsd__string username) {
+int searchUserInUserList(struct datos_usuarios * t, xsd__string username) {
 
-	int i;
-	for (i = 0; i < t->nUsers; i++) {
+	int i = 0, pos = -1;
+
+	while (pos == -1 && i < t->nUsers) {
 		if (strcmp(t->usuarios[i].username, username) == 0)
-			return 0;
+			pos = i;
+		else
+			i++;
 	}
-	
-	return -1;
+
+	return pos;
 }

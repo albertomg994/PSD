@@ -74,7 +74,7 @@ int ims__receiveMessage (struct Message *myMessage);
 int ims__darAlta (char* username, struct ResultMsg *result);
 
 // Baja en el sistema
-int ims__darBaja(char* username, int *result);
+int ims__darBaja(char* username, struct ResultMsg *result);
 
 // Login en el sistema
 int ims__login (char* username, struct ResultMsg *result);

@@ -7,12 +7,10 @@
 // -----------------------------------------------------------------------------
 // Tipos, constantes y estructuras
 // -----------------------------------------------------------------------------
-#define MAX_USERS 100
+#define MAX_USERS 100 // Nº máximo de usuarios dados de alta en el sistema.
 
 struct reg_usuario {
 	char username[IMS_MAX_NAME_SIZE];
-	char amigos[IMS_MAX_AMIGOS][IMS_MAX_NAME_SIZE];
-	int numAmigos;
 	int connected;
 	int baja;
 };
@@ -25,14 +23,12 @@ struct datos_usuarios {
 // -----------------------------------------------------------------------------
 // Cabeceras de funciones
 // -----------------------------------------------------------------------------
-void s_usuarios();
-
 int loadUsersData(struct datos_usuarios * t);
 int saveUsersData(struct datos_usuarios * t);
 int printUsersData(struct datos_usuarios * t);
 
 int addUser(struct datos_usuarios * t, xsd__string username);
 int deleteUser(struct datos_usuarios * t, xsd__string username);
-int searchUser(struct datos_usuarios * t, xsd__string username);
+int searchUserInUserList(struct datos_usuarios * t, xsd__string username);
 
 #endif

@@ -9,7 +9,7 @@
  * @param destinatario Destinatario de la petición de amistad
  * @return 0 si éxito, -1 si la lista está llena, -2 petición a si mismo, -3 ya es tu amigo, -4 no existe
  */
-int addFriendRequest(struct amistades_pendientes* ap, struct datos_usuarios* du, char* emisor, char* destinatario) {
+int addFriendRequest(struct amistades_pendientes* ap, struct datos_usuarios* du, struct listas_amigos* la, char* emisor, char* destinatario) {
 
 	// Lista de amigos llena
 	if (ap->nPeticiones >= MAX_AMISTADES_PENDIENTES)
@@ -19,12 +19,16 @@ int addFriendRequest(struct amistades_pendientes* ap, struct datos_usuarios* du,
 	if (strcmp(emisor, destinatario) == 0)
 		return -2;
 
-	/* TODO: Faltaría controlar que no está ya en tu lista de amigos */
-	//	if (yaEsTuAmigo())
-	//		return -3;
-
-	if (searchUser(du, destinatario) == -1)
+	// El destinatario no existe
+	int pos = searchUserInUserList(du, destinatario);
+	if (pos == -1)
 		return -4;
+
+	// Mandar petición a alguien que ya es nuestro amigo
+	if (isFriendInList(la, pos, destinatario) == 1)
+		return -3;
+
+
 
 	// Añadir al array
 	strcpy(ap->amistades_pendientes[ap->nPeticiones].emisor, emisor);
@@ -83,6 +87,27 @@ void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amista
 				strcat(lista->peticiones, " \0"); // Add space
 
 			lista->nElems++;
+		}
+	}
+}
+
+/**
+ * Elimina todas las peticiones de amistad pendientes relacionadas con un
+ * usuario (para cuando se da de baja).
+ * @param ap Puntero a la estructura del servidor con las peticiones pendientes.
+ * @param username Nombre del usuario que se da de baja.
+ */
+void delUserRelatedFriendRequests(struct amistades_pendientes* ap, xsd__string username) {
+	int i;
+	for (i = 0; i < ap->nPeticiones; i++) {
+		if (strcmp(username, ap->amistades_pendientes[i].emisor) == 0 || strcmp(username, ap->amistades_pendientes[i].destinatario) == 0) {
+			// Desplazar todas las de la derecha.
+			ap->nPeticiones--;
+			int j;
+			for (j = i; j < ap->nPeticiones; j++) {
+				strcpy(ap->amistades_pendientes[i].emisor, ap->amistades_pendientes[i+1].emisor);
+				strcpy(ap->amistades_pendientes[i].destinatario, ap->amistades_pendientes[i+1].destinatario);
+			}
 		}
 	}
 }
@@ -281,4 +306,80 @@ void createFriendListEntry(char* username, struct listas_amigos* la) {
 	la->listas[la->nUsuarios].nAmigos = 0;
 	strcpy(la->listas[la->nUsuarios].usuario, username);
 	la->nUsuarios++;
+}
+
+/**
+ * Comprueba si 'destinatario' ya está en la lista de amigos de 'emisor'
+ * @param emisor Emisor de la petición de amistad.
+ * @param destinatario Receptro de la petición de amistad.
+ * @return 0 si no está, 1 si ya existe.
+ */
+int isFriendInList(struct listas_amigos* la, int pos, char* destinatario) {
+
+	// NOTA IMPORTANTE: doy por hecho que la posición de un usuario en la estructura
+	// de los usuarios registrados y la estructra de los amigos es la misma.
+	// Si no, esto petará.
+
+	int i = 0, existe = 0;
+	while (existe == 0 && i < la->listas[pos].nAmigos) {
+		if (strcmp(la->listas[pos].amigos[i], destinatario)) // Encontramos el amigo
+			existe = 1;
+		else
+			i++;
+	}
+
+	return existe;
+}
+
+/**
+ * Busca el nombre de un usuario en la estructura del servidor.
+ * @param t Puntero a la estructura
+ * @param username Nombre del usuario a Buscar
+ * @return -1 si no existe, la posición donde está si existe. v
+ */
+int searchUserInFriendList(struct listas_amigos * la, xsd__string username) {
+
+	int i = 0, pos = -1;
+
+	while (pos == -1 && i < la->nUsuarios) {
+		if (strcmp(la->listas[i].usuario, username) == 0)
+			pos = i;
+		else
+			i++;
+	}
+
+	return pos;
+}
+
+/**
+ * Elimina un usuario del la lista de amistades.
+ * @param username Nombre del usuario a dar de baja.
+ * @param t Puntero a la estructura de datos.
+ * @return 0 si éxito, -1 si error si el usuario no existía.
+ */
+int deleteFriendListEntry(struct listas_amigos * la, xsd__string username) {
+
+	// Buscar si existe un usuario con el mismo nombre
+	int pos = searchUserInFriendList(la, username);
+
+	// Si no existía, salimos
+	if (pos < 0) return -1;
+
+	// Eliminar el usuario de la estructura (i.e. desplazar el resto)
+	la->nUsuarios--;
+	for (pos; pos < la->nUsuarios; pos++) {
+		strcpy(la->listas[pos].usuario, la->listas[pos+1].usuario); // destino, origen
+		copy(&la->listas[pos], &la->listas[pos+1]);
+	}
+
+	return 0;
+}
+
+void copy(struct amigos_usuario* dest, struct amigos_usuario* src) {
+	dest->nAmigos = src->nAmigos;
+	strcpy(dest->usuario, src->usuario);
+	int i;
+	for (i = 0; i < src->nAmigos; i++) {
+		strcpy(dest->amigos[i], src->amigos[i]);
+	}
 }

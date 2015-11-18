@@ -183,14 +183,24 @@ int ims__darAlta (struct soap *soap, char* username, struct ResultMsg *result) {
 	return SOAP_OK;
 }
 
-int ims__darBaja(struct soap *soap, char* username, int *result){
+int ims__darBaja(struct soap *soap, char* username, struct ResultMsg* result){
 
-	if (DEBUG_MODE) printf("Recibido nombre de usuario: %s\n", username);
-	*result= deleteUser(&db,username);
+	result->msg = malloc(IMS_MAX_MSG_SIZE);
+	int res;
 
+	// 1. Borrar de la BD de usuarios --> Marcar baja=0
+	res = deleteUser(&db, username); // 0 éxito, -1 err.
 
-	if (*result >= 0)
-		saveUsersData(&db);
+	// 2. Borrar de la estructura de amistades
+	res = deleteFriendListEntry(&la, username); // 0 éxito, -1 err.
+
+	// 3. Borrar peticiones de amistad (en cualquier dirección) pendientes
+	delUserRelatedFriendRequests(&ap, username);
+
+	// 4. Borrar mensajes y conversaciones
+	/*if (*result >= 0)
+		saveUsersData(&db);*/
+	result->code = res;
 
 	return SOAP_OK;
 }
@@ -272,7 +282,7 @@ int ims__sendFriendRequest (struct soap *soap, struct PeticionAmistad p, struct 
 
 	result->msg = malloc(IMS_MAX_MSG_SIZE);
 
-	result->code = addFriendRequest(&ap, &db, p.emisor, p.receptor);
+	result->code = addFriendRequest(&ap, &db, &la, p.emisor, p.receptor);
 
 	if (result->code == 0)
 		strcpy(result->msg, "Petición enviada correctamente.");
