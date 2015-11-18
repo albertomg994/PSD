@@ -20,7 +20,6 @@ struct soap soap;
 char* serverURL;
 char username_global[IMS_MAX_NAME_SIZE];
 struct MisAmigos mis_amigos;
-
 // -----------------------------------------------------------------------------
 // Cabeceras de funciones
 // -----------------------------------------------------------------------------
@@ -194,6 +193,7 @@ void menuAvanzado() {
 		printf("4.- Ver amigos\n");
 		printf("5.- Dar de baja\n");
 		printf("6.- Cerrar sesión\n");
+		printf("7.- Recibir mensajes\n");
 
 		opcion = getchar();
 		clean_stdin();
@@ -445,10 +445,15 @@ int getFriendList() {
 }
 
 void recibirMensaje(){
-   char* lista = malloc( (IMS_MAX_NAME_SIZE+IMS_MAX_MSG_SIZE)*MAX_MENSAJES);
+
+	struct ListaMensajes listaMensajes;
+
+   listaMensajes.mensajes = malloc( (IMS_MAX_NAME_SIZE+IMS_MAX_MSG_SIZE)*MAX_MENSAJES);
 
    // Llamada gSOAP
-   //soap_call_ims__receiveMessage(&soap, serverURL, "", username_global, lista);
+   soap_call_ims__receiveMessage(&soap, serverURL, "", username_global, &listaMensajes);
+
+	printf("%s",listaMensajes.mensajes);
 
    // Comprobar errores
 	if (soap.error) {
