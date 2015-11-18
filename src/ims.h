@@ -53,6 +53,11 @@ struct ListaAmigos {
 	xsd__string amigos;
 };
 
+struct ListaMensajes {
+	int nElems;
+	xsd__string mensajes;
+};
+
 /* Se usa para devolver al cliente el resultado de una llamada gsoap. */
 struct ResultMsg {
 	int code;			// Código de error (0 si éxito, -1 si error)
@@ -67,8 +72,8 @@ struct ResultMsg {
 int ims__sendMessage (struct Message2 myMessage, int *result);
 
 // Recibir un mensaje de prueba
-//int ims__receiveMessage (char* username, char* result);
-int ims__receiveMessage (struct Message *myMessage);
+int ims__receiveMessage (char* username, struct ListaMensajes* result);
+//int ims__receiveMessage (struct Message *myMessage);
 
 // Alta en el sistema
 int ims__darAlta (char* username, struct ResultMsg *result);
