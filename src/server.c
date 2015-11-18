@@ -196,7 +196,7 @@ int ims__darBaja(struct soap *soap, char* username, struct ResultMsg* result){
 	// 2. Borrar de la estructura de amistades
 	if (res == 0) res = deleteFriendListEntry(&la, username); // 0 éxito, -1 err.
 
-	// TODO: borrar también de las listas de amigos de otras personas.
+	// 3. Borrar también de las listas de amigos de otras personas.
 	deleteUserFromEverybodyFriendList(&la, username);
 
 	// 3. Borrar peticiones de amistad (en cualquier dirección) pendientes
