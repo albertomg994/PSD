@@ -7,14 +7,24 @@
  * @param ap Estructura que almacena las peticiones
  * @param emisor Emisor de la petición de amistad
  * @param destinatario Destinatario de la petición de amistad
- * @return 0 si éxito, -1 si la lista está llena
+ * @return 0 si éxito, -1 si la lista está llena, -2 petición a si mismo, -3 ya es tu amigo, -4 no existe
  */
-int addFriendRequest(struct amistades_pendientes* ap, char* emisor, char* destinatario) {
+int addFriendRequest(struct amistades_pendientes* ap, struct datos_usuarios* du, char* emisor, char* destinatario) {
 
+	// Lista de amigos llena
 	if (ap->nPeticiones >= MAX_AMISTADES_PENDIENTES)
 		return -1;
 
-	/* TODO: Faltaría controlar que existe el usuario al que enviamos la petición */
+	// Cliente se manda petición a si mismo
+	if (strcmp(emisor, destinatario) == 0)
+		return -2;
+
+	/* TODO: Faltaría controlar que no está ya en tu lista de amigos */
+	//	if (yaEsTuAmigo())
+	//		return -3;
+
+	if (searchUser(du, destinatario) == -1)
+		return -4;
 
 	// Añadir al array
 	strcpy(ap->amistades_pendientes[ap->nPeticiones].emisor, emisor);
@@ -260,4 +270,15 @@ int getFriendList(char* username, struct listas_amigos* la, char* lista) {
 		i++;
 	}
 	return 0;
+}
+
+/**
+ * Da de alta a un usuario en la lista de amigos (si acaba de registrarse)
+ * @param username Nombre de usuario a dar de alta
+ * @param la Puntero a la estructura de datos del servidor.
+ */
+void createFriendListEntry(char* username, struct listas_amigos* la) {
+	la->listas[la->nUsuarios].nAmigos = 0;
+	strcpy(la->listas[la->nUsuarios].usuario, username);
+	la->nUsuarios++;
 }

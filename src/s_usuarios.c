@@ -195,3 +195,20 @@ int deleteUser(struct datos_usuarios * t, xsd__string username) {
 
 	return 0;
 }
+
+/**
+ * Busca el nombre de un usuario en la estructura del servidor.
+ * @param t Punteor a la estructura
+ * @param username Nombre del usuario a Buscar
+ * @return 0 si existe, -1 si no existe.
+ */
+int searchUser(struct datos_usuarios * t, xsd__string username) {
+
+	int i;
+	for (i = 0; i < t->nUsers; i++) {
+		if (strcmp(t->usuarios[i].username, username) == 0)
+			return 0;
+	}
+	
+	return -1;
+}

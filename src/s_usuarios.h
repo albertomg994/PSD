@@ -33,5 +33,6 @@ int printUsersData(struct datos_usuarios * t);
 
 int addUser(struct datos_usuarios * t, xsd__string username);
 int deleteUser(struct datos_usuarios * t, xsd__string username);
+int searchUser(struct datos_usuarios * t, xsd__string username);
 
 #endif

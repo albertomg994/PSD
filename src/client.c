@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
  */
 void registrarse() {
 
-	int res;
+	struct ResultMsg res;
 
 	// 1. Pedir datos para registrarse
 	printf("Nombre de usuario:");
@@ -117,12 +117,8 @@ void registrarse() {
 		exit(1);
 	}
 
-	if (res == 0)
-		printf("El usuario %s ha sido registrado correctamente.\n", name);
-	else if (res == -2)
-		printf("Es posible que el nombre de usuario ya exista.\n");
-	else
-		printf("Error del servidor.\n");
+	// Mostrar el resultado de la llamada al servidor:
+	printf("%s\n", res.msg);
 }
 
 /**
@@ -156,7 +152,7 @@ void darBaja() {
  */
 void iniciarSesion() {
 
-	int res;
+	struct ResultMsg res;
 
 	// 1. Pedir datos del login
 	printf("Nombre de usuario:");
@@ -174,10 +170,9 @@ void iniciarSesion() {
 		exit(1);
 	}
 
-	if (res < 0)
-		printf("El usuario %s no existe.\n", username_global);
-	else {
-
+	if (res.code < 0)	// Error al inicial sesión
+		printf("%s\n", res.msg);
+	else {				// Inicio de sesión correcto
 		if (getFriendList() < 0)
 			printf("Error obteniendo tu lista de amigos del servidor.\n");
 		else
@@ -301,7 +296,7 @@ void sendFriendRequest() {
 
 	struct PeticionAmistad pet;
 	char receptor[IMS_MAX_NAME_SIZE];
-	int res;
+	struct ResultMsg res;
 
 	// 1. Poner el emisor
 	pet.emisor = malloc (IMS_MAX_NAME_SIZE);
@@ -318,11 +313,14 @@ void sendFriendRequest() {
 	// 3. Llamada gSOAP
 	soap_call_ims__sendFriendRequest(&soap, serverURL, "", pet, &res);
 
-	// 4. Comprobar errores
+	// 4. Comprobar errores de gSOAP
 	if (soap.error) {
 		soap_print_fault(&soap, stderr);
 		exit(1);
 	}
+
+	// Mostar al cliente el resultado de la llamada
+	printf("%s\n", res.msg);
 }
 
 /**
@@ -370,7 +368,7 @@ void receiveFriendRequests() {
 
 			// Rellenamos la estructura que se envía en la llamada gSOAP
 			if (c == 's')
-				rp.aceptada = 1;
+				rp.aceptada = 1; // Actualizar la lista de amigos del cliente
 			else
 				rp.aceptada = 0;
 
@@ -392,6 +390,9 @@ void receiveFriendRequests() {
 			}
 		}
 
+		// Pedir la lista de amigos actualizada al servidor.
+		if (getFriendList() < 0)
+			printf("Error obteniendo tu lista de amigos del servidor.\n");
 	}
 }
 
@@ -403,7 +404,7 @@ void showFriends() {
 	printf("Tus amigos son:\n");
 	printf("---------------\n");
 	if (mis_amigos.nElems == 0)
-		printf ("   < No tienes amigos :( > ");
+		printf ("   < No tienes amigos :( > \n");
 	else {
 		int i;
 		for (i = 0; i < mis_amigos.nElems; i++)
@@ -447,7 +448,7 @@ void recibirMensaje(){
    char* lista = malloc( (IMS_MAX_NAME_SIZE+IMS_MAX_MSG_SIZE)*MAX_MENSAJES);
 
    // Llamada gSOAP
-   soap_call_ims__receiveMessage(&soap, serverURL, "", username_global, lista);
+   //soap_call_ims__receiveMessage(&soap, serverURL, "", username_global, lista);
 
    // Comprobar errores
 	if (soap.error) {

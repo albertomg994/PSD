@@ -1,7 +1,9 @@
 // Alberto Miedes Garcés y Denys Sypko
 #include "soapH.h"
 #include "imsService.nsmap"
-#include "stdio.h"
+#include <stdio.h>
+#include <signal.h>
+#include <stdlib.h>
 #include "externo.h"
 #include "s_usuarios.h"
 #include "s_mensajes.h"
@@ -16,6 +18,8 @@ struct datos_usuarios db;	// en mem. estática (todo)
 struct amistades_pendientes ap;
 struct listas_amigos la;
 
+/* Flag para activar el guardado. */
+volatile sig_atomic_t save_data = 0;
 // -----------------------------------------------------------------------------
 // Estructuras propias del servidor
 // -----------------------------------------------------------------------------
@@ -112,13 +116,15 @@ int main(int argc, char **argv){
 
 		// Execute invoked operation
 	  soap_serve(&soap);
+	  printf("Después de servir una operación");
 
 		// Clean up!
 		soap_end(&soap);
-	}
 
-	// Escribimos en el fichero los cambios
-	saveUsersData(&db);
+		// Guardar los posibles cambios en fichero.
+		saveUsersData(&db);
+		saveFriendsData(&la);
+	}
 
 	return 0;
 }
@@ -141,7 +147,8 @@ int ims__receiveMessage (struct soap *soap, struct Message *myMessage){
 
 						(CORREGIR CUANDO SE PUEDA)
 */
-int ims__receiveMessage (struct soap* soap, char* username, char* result){
+int ims__receiveMessage (struct soap *soap, struct Message *myMessage){
+//int ims__receiveMessage (struct soap* soap, char* username, char* result){
 
 	// Allocate space for the message field of the myMessage struct then copy it
 	myMessage->msg = (xsd__string) malloc (IMS_MAX_MSG_SIZE);
@@ -158,13 +165,20 @@ int ims__receiveMessage (struct soap* soap, char* username, char* result){
 	return SOAP_OK;
 }
 
-int ims__darAlta (struct soap *soap, char* username, int *result) {
+int ims__darAlta (struct soap *soap, char* username, struct ResultMsg *result) {
 
-	if (DEBUG_MODE) printf("Recibido nombre de usuario: %s\n", username);
-	*result = addUser(&db, username); //-1 err, -2 no existe
+	result->msg = malloc(IMS_MAX_MSG_SIZE);
 
-	if (*result >= 0)
-		saveUsersData(&db);
+	result->code = addUser(&db, username); //-1 err, -2 ya existe
+
+	if (result->code == 0) {
+		strcpy(result->msg, "Usuario registrado correctamente.");
+		createFriendListEntry(username, &la);
+	}
+	else if (result->code == -1)
+		strcpy(result->msg, "ERROR (-1): Error interno del servidor.");
+	else if (result->code == -2)
+		strcpy(result->msg, "ERROR (-2): Este nombre no está disponible.");
 
 	return SOAP_OK;
 }
@@ -187,22 +201,36 @@ int ims__darBaja(struct soap *soap, char* username, int *result){
  * @param username Nombre del usuario que hace login.
  * @param result Resultado de la llamada al servicio gSOAP.
  */
-int ims__login (struct soap *soap, char* username, int *result) {
+int ims__login (struct soap *soap, char* username, struct ResultMsg *result) {
 
 	int existe = 0, i = 0;
-	if (DEBUG_MODE) printf("Recibido nombre de usuario: %s\n", username);
 
-	// Buscar si existe un usuario con el mismo nombre
+	result->msg = malloc(IMS_MAX_MSG_SIZE);
+
+	// Buscar si existe un usuario con este nombre o si ya tiene una sesión iniciada.
 	while (existe == 0 && i < db.nUsers) {
-		if (strcmp(db.usuarios[i].username, username) == 0) {
+		if (strcmp(db.usuarios[i].username, username) == 0) { // Existe el usuario
 			existe = 1;
-			db.usuarios[i].connected = 1;
+			if (db.usuarios[i].connected == 0) {					// No tiene sesión iniciada
+				db.usuarios[i].connected = 1;
+				result->code = 0;
+			} else															// Tiene sesión iniciada
+				result->code = -2;
 		}
 		i++;
 	}
 
-	if(existe == 0)
-		*result = -1;
+	// Si no existía el usuario:
+	if (existe == 0)
+		result->code = -1;
+
+	// Rellenamos la estructura que se devuelve al cliente
+	if (result->code == 0)
+		strcpy(result->msg, "Login correcto.");
+	else if (result->code == -1)
+		strcpy(result->msg, "ERROR (-1): El usuario indicado no existe.");
+	else if (result->code == -2)
+		strcpy(result->msg, "ERROR (-2): El usuario indicado ya tiene una sesión iniciada.");
 
 	if(DEBUG_MODE) printUsersData(&db);
 
@@ -240,15 +268,22 @@ int ims__logout (struct soap *soap, char* username, int *result) {
 /**
  * Servicio gSOAP para enviar peticiones de amistad.
  */
-int ims__sendFriendRequest (struct soap *soap, struct PeticionAmistad p, int *result) {
-	printf("Received by server:\n");
-	printf("\temisor pet.amistad: %s\n", p.emisor);
-	printf("\treceptor pet.amistad: %s\n", p.receptor);
+int ims__sendFriendRequest (struct soap *soap, struct PeticionAmistad p, struct ResultMsg *result) {
 
-	if(addFriendRequest(&ap, p.emisor, p.receptor) == 0)
-		printf("Petición añadida con éxito.\n");
-	else
-		printf("Error al añadir la petición.\n");
+	result->msg = malloc(IMS_MAX_MSG_SIZE);
+
+	result->code = addFriendRequest(&ap, &db, p.emisor, p.receptor);
+
+	if (result->code == 0)
+		strcpy(result->msg, "Petición enviada correctamente.");
+	else if (result->code == -1)
+		strcpy(result->msg, "ERROR (-1): La lista de peticiones de amistad del servidor está llena. Inténtalo de nuevo más tarde.");
+	else if (result->code == -2)
+		strcpy(result->msg, "ERROR (-2): No puedes enviarte una petición a ti mismo.");
+	else if (result->code == -3)
+		strcpy(result->msg, "ERROR (-3): Este usuario ya es tu amigo.");
+	else if (result->code == -4)
+		strcpy(result->msg, "ERROR (-4): Este usuario no existe.");
 
 	return SOAP_OK;
 }
