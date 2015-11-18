@@ -124,6 +124,8 @@ int main(int argc, char **argv){
 		// Guardar los posibles cambios en fichero.
 		saveUsersData(&db);
 		saveFriendsData(&la);
+
+		// Desenmascarar SIGINIT
 	}
 
 	return 0;
@@ -192,10 +194,13 @@ int ims__darBaja(struct soap *soap, char* username, struct ResultMsg* result){
 	res = deleteUser(&db, username); // 0 éxito, -1 err.
 
 	// 2. Borrar de la estructura de amistades
-	res = deleteFriendListEntry(&la, username); // 0 éxito, -1 err.
+	if (res == 0) res = deleteFriendListEntry(&la, username); // 0 éxito, -1 err.
+
+	// TODO: borrar también de las listas de amigos de otras personas.
+	deleteUserFromEverybodyFriendList(&la, username);
 
 	// 3. Borrar peticiones de amistad (en cualquier dirección) pendientes
-	delUserRelatedFriendRequests(&ap, username);
+	if (res == 0) delUserRelatedFriendRequests(&ap, username);
 
 	// 4. Borrar mensajes y conversaciones
 	/*if (*result >= 0)

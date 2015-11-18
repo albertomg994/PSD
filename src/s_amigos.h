@@ -44,6 +44,8 @@ void delUserRelatedFriendRequests(struct amistades_pendientes* ap, xsd__string u
 void createFriendListEntry(char* username, struct listas_amigos* la);
 int deleteFriendListEntry(struct listas_amigos * la, xsd__string username);
 
+void deleteUserFromEverybodyFriendList(struct listas_amigos* la, xsd__string username);
+
 int loadFriendsData(struct listas_amigos* la);
 int saveFriendsData(struct listas_amigos* la);
 void printFriendsData(struct listas_amigos* la);

@@ -383,3 +383,19 @@ void copy(struct amigos_usuario* dest, struct amigos_usuario* src) {
 		strcpy(dest->amigos[i], src->amigos[i]);
 	}
 }
+
+void deleteUserFromEverybodyFriendList(struct listas_amigos* la, xsd__string username) {
+	int i, j, k;
+	// Para cada usuario del sistema
+	for (i = 0; i < la->nUsuarios; i++) {
+		// Para la lista de cada usuario, buscar al que Borramos
+		for (j = 0; j < la->listas[i].nAmigos; j++) {
+			if (strcmp(la->listas[i].amigos[j], username) == 0) {
+				// Borrar username y desplazar el resto de amigos
+				la->listas[i].nAmigos--;
+				for (k = j; k < la->listas[i].nAmigos; k++)
+					strcpy(la->listas[i].amigos[k], la->listas[i].amigos[k+1]);
+			}
+		}
+	}
+}
