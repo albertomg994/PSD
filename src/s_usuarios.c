@@ -123,6 +123,7 @@ int addUser(struct datos_usuarios * t, xsd__string username) {
   if (existe == 1) return -2;
 
   /*Lo hago despues de comprobacion para asegurar que el usuario no existe */
+  //chdir("Server");
   dir=mkdir(username,0777);
 
   if(dir!=0){
@@ -143,9 +144,9 @@ int addUser(struct datos_usuarios * t, xsd__string username) {
     	return -1;
    }
 
-    chdir("..");
-    printf("Sea ha creado la carpeta %s\n",username);
-
+   chdir("..");
+   printf("Sea ha creado la carpeta %s\n",username);
+	//chdir("..");
 
 
 
