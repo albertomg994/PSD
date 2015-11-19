@@ -235,9 +235,11 @@ int ims__darBaja(struct soap *soap, char* username, struct ResultMsg* result){
 	result->msg = malloc(IMS_MAX_MSG_SIZE);
 	int res;
 
-	// 1. Borrar de la BD de usuarios --> Marcar baja=0
-	res = deleteUser(&db, username); // 0 éxito, -1 err.
-
+	// 1. Borrar de la BD de usuarios
+	//res = deleteUser(&db, username);
+	int pos = searchUserInUserList(&db, username);
+	db.usuarios[pos].baja = 1;
+	printf("valor de lo que se ha hecho: %d\n", db.usuarios[pos].baja);
 	// 2. Borrar de la estructura de amistades
 	if (res == 0) res = deleteFriendListEntry(&la, username); // 0 éxito, -1 err.
 
@@ -270,7 +272,10 @@ int ims__login (struct soap *soap, char* username, struct ResultMsg *result) {
 	while (existe == 0 && i < db.nUsers) {
 		if (strcmp(db.usuarios[i].username, username) == 0) { // Existe el usuario
 			existe = 1;
-			if (db.usuarios[i].connected == 0) {					// No tiene sesión iniciada
+			if (db.usuarios[i].baja == 1) {// En el pasado, existió un usuario con este nombre
+				existe = 0;
+				break;
+			} else if (db.usuarios[i].connected == 0) {					// No tiene sesión iniciada
 				db.usuarios[i].connected = 1;
 				result->code = 0;
 			} else															// Tiene sesión iniciada
@@ -345,7 +350,7 @@ int ims__sendFriendRequest (struct soap *soap, struct PeticionAmistad p, struct 
 		strcpy(result->msg, "ERROR (-5): Ya has mandado una petición de amistad a este usuario.");
 	else if (result->code == -6)
 		strcpy(result->msg, "ERROR (-6): Existe una petición equivalente en tu bandeja de entrada.");
-		
+
 	return SOAP_OK;
 }
 

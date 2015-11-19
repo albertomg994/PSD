@@ -29,14 +29,34 @@ int loadUsersData(struct datos_usuarios * t) {
 		printf("Fichero abierto correctamente.\n");
 
 	// Leer los usuarios hasta fin de fichero
-	while (fgets(line, IMS_MAX_NAME_SIZE, fichero) != NULL) {
-		//printf("Se ha leido %s\n", line);
-		line[strlen(line)-1] = '\0'; // quitamos el '\n' del fichero
-		strncpy((t->usuarios[nUsr]).username, line, IMS_MAX_NAME_SIZE);
+	char c = fgetc(fichero);
+	while (c != EOF) {
+		// Read till space
+		//strcat(t->usuarios[nUsr]).username, &c);
+		appendChar(t->usuarios[nUsr].username, c);
+		c = fgetc(fichero);
+		while (c != ' ') {
+			//strcat(t->usuarios[nUsr]).username, &c); // Add to name
+			appendChar(t->usuarios[nUsr].username, c);
+			c = fgetc(fichero);
+		}
+		// Read (baja = 0 or baja = 1)
+		c = fgetc(fichero);
+		if (c == '0')
+			t->usuarios[nUsr].baja = 0;
+		else
+			t->usuarios[nUsr].baja = 1;
+
 		(t->usuarios[nUsr]).connected = 0;
-		//printf("(t->usuarios[%d]).username -> %s\n", nUsr, (t->usuarios[nUsr]).username);
+
+		// Read '\n'
+		c = fgetc(fichero);
 		nUsr++;
+
+		// Read next user (or EOF)
+		c = fgetc(fichero);
 	}
+
 	t->nUsers = nUsr;
 	printUsersData(t);
 
@@ -72,6 +92,11 @@ int saveUsersData(struct datos_usuarios * t) {
 	int i;
 	for (i = 0; i < t->nUsers; i++) {
 		fwrite(t->usuarios[i].username, strlen(t->usuarios[i].username), 1, fichero);
+		fputc(' ', fichero);
+		if (t->usuarios[i].baja == 1)
+			fputc('1', fichero);
+		else
+			fputc('0', fichero);
 		fputc('\n',fichero);
 	}
 
@@ -96,7 +121,7 @@ int printUsersData(struct datos_usuarios * t) {
 	printf("------------------------------\n");
 	int i;
 	for (i = 0; i < t->nUsers; i++) {
-		printf("Usuario %d: %s.\t\tConnected = %d\n", i, t->usuarios[i].username, t->usuarios[i].connected);
+		printf("Usuario %d: %s\t\tConnected = %d \tBaja: %d\n", i, t->usuarios[i].username, t->usuarios[i].connected, t->usuarios[i].baja);
 	}
 	printf("==============================\n");
 	return 0;
