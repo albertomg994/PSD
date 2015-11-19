@@ -28,7 +28,15 @@ int addFriendRequest(struct amistades_pendientes* ap, struct datos_usuarios* du,
 	if (isFriendInList(la, emisor, destinatario) == 1)
 		return -3;
 
+	// Ya ha mandado esta misma petición con anterioridad.
+	if (searchFriendRequest(ap, emisor, destinatario) >= 0) {
+		return -5;
+	}
 
+	// Ya hay una petición de amistad en sentido inverso
+	if (searchFriendRequest(ap, destinatario, emisor) >= 0) {
+		return -6;
+	}
 
 	// Añadir al array
 	strcpy(ap->amistades_pendientes[ap->nPeticiones].emisor, emisor);
@@ -53,7 +61,7 @@ void delFriendRequest(struct amistades_pendientes* ap, char* emisor, char* recep
 	int i = 0, salir = 0, j;
 
 	// Buscamos la petición que queremos borrar
-	while (salir == 0 && ap->nPeticiones) {
+	while (salir == 0 && i < ap->nPeticiones) {
 		if (strcmp(emisor, ap->amistades_pendientes[i].emisor) == 0 &&
 			 strcmp(receptor, ap->amistades_pendientes[i].destinatario) == 0) {
 				 // Desplazar desde i hasta el nPeticiones-2
@@ -110,6 +118,28 @@ void delUserRelatedFriendRequests(struct amistades_pendientes* ap, xsd__string u
 			}
 		}
 	}
+}
+
+/**
+ * Busca una petición de amistad en la estructura del servidor.
+ * @param ap Puntero a la estructura
+ * @param emisor Emisor de la petición
+ * @param destinatario Destinatario de la petición de amistad.
+ * @return El índice dentro de ap (si existe), o -1 si no existe.
+ */
+int searchFriendRequest(struct amistades_pendientes* ap, xsd__string emisor, xsd__string destinatario) {
+
+	int i = 0, pos = -1;
+
+	while (pos == -1 && i < ap->nPeticiones) {
+		// Si encontramos la petición en cuestión.
+		if (strcmp(emisor, ap->amistades_pendientes[i].emisor) == 0 &&
+			 strcmp(destinatario, ap->amistades_pendientes[i].destinatario) == 0) {
+				 pos = i;
+		}
+		i++;
+	}
+	return pos;
 }
 
 /**
@@ -426,7 +456,7 @@ int isFriendInList(struct listas_amigos* la, char* emisor, char* destinatario) {
 	int pos = searchUserInFriendList(la, emisor);
 	if (pos < 0)
 		return -1;
-		
+
 	int i = 0, existe = 0;
 	printf("%s tiene %d amigos.\n", emisor, la->listas[pos].nAmigos);
 	while (existe == 0 && i < la->listas[pos].nAmigos) {

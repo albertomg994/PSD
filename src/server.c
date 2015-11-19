@@ -341,7 +341,11 @@ int ims__sendFriendRequest (struct soap *soap, struct PeticionAmistad p, struct 
 		strcpy(result->msg, "ERROR (-3): Este usuario ya es tu amigo.");
 	else if (result->code == -4)
 		strcpy(result->msg, "ERROR (-4): Este usuario no existe.");
-
+	else if (result->code == -5)
+		strcpy(result->msg, "ERROR (-5): Ya has mandado una petición de amistad a este usuario.");
+	else if (result->code == -6)
+		strcpy(result->msg, "ERROR (-6): Existe una petición equivalente en tu bandeja de entrada.");
+		
 	return SOAP_OK;
 }
 

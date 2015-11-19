@@ -40,6 +40,7 @@ int addFriendRequest(struct amistades_pendientes* ap, struct datos_usuarios* du,
 void delFriendRequest(struct amistades_pendientes* ap, char* emisor, char* receptor);
 void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amistades_pendientes* ap, struct ListaPeticiones *lista);
 void delUserRelatedFriendRequests(struct amistades_pendientes* ap, xsd__string username);
+int searchFriendRequest(struct amistades_pendientes* ap, xsd__string emisor, xsd__string destinatario);
 
 void createFriendListEntry(char* username, struct listas_amigos* la);
 int deleteFriendListEntry(struct listas_amigos * la, xsd__string username);
