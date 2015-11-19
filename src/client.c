@@ -195,7 +195,7 @@ void menuAvanzado() {
 		printf("4.- Ver amigos\n");
 		printf("5.- Dar de baja\n");
 		printf("6.- Cerrar sesión\n");
-		printf("7.- Recibir mensajes\n");
+		printf("7.- Consultar mensajes\n");
 
 		opcion = getchar();
 		clean_stdin();
@@ -259,7 +259,7 @@ void enviarMensaje() {
 	struct Message2 mensaje;
 	char text[IMS_MAX_MSG_SIZE];
 	char receptor[IMS_MAX_NAME_SIZE];
-	int res;
+	int res,i,find=0;
 
 	// 1. Poner el mensaje
 	printf("Introduce el texto:");
@@ -280,14 +280,21 @@ void enviarMensaje() {
 	clean_stdin();
 	mensaje.receptor = malloc (IMS_MAX_NAME_SIZE);
 	strcpy(mensaje.receptor, receptor);
-
-	// 4. Llamada gSOAP
-	soap_call_ims__sendMessage (&soap, serverURL, "", mensaje, &res);
-
-	// 5. Comprobar errores
-	if (soap.error) {
-		soap_print_fault(&soap, stderr);
-		exit(1);
+	// Comprobar que el reseptor es tu amigo
+	for (i = 0; i < mis_amigos.nElems && !find; i++){
+		if( strcmp( mis_amigos.amigos[i],mensaje.receptor) == 0)
+			find=1;
+	}
+	if(!find){
+		printf("	ERROR: El receptor no es tu amigo. =( \n");
+	}else{
+		// 4. Llamada gSOAP
+		soap_call_ims__sendMessage (&soap, serverURL, "", mensaje, &res);
+		// 5. Comprobar errores
+		if (soap.error) {
+			soap_print_fault(&soap, stderr);
+			exit(1);
+		}
 	}
 }
 
@@ -454,9 +461,9 @@ void recibirMensaje(){
 
    // Llamada gSOAP
    soap_call_ims__receiveMessage(&soap, serverURL, "", username_global, &listaMensajes);
-
+	printf("--------------------------\n");
 	printf("%s",listaMensajes.mensajes);
-
+	printf("--------------------------\n");
    // Comprobar errores
 	if (soap.error) {
 		soap_print_fault(&soap, stderr);

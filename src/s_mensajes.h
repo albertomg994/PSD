@@ -5,4 +5,5 @@
 
 void s_mensajes();
 int sendMessage (struct Message2 myMessage);
+int receiveMessage(char* username,struct ListaMensajes* result);
 #endif

@@ -169,46 +169,10 @@ int ims__sendMessage (struct soap *soap, struct Message2 myMessage, int *result)
 
 int ims__receiveMessage (struct soap* soap, char* username, struct ListaMensajes* result){
 
-	// Allocate space for the message field of the myMessage struct then copy it
-	result->mensajes =  malloc( (IMS_MAX_NAME_SIZE+IMS_MAX_MSG_SIZE)*MAX_MENSAJES);
-	FILE * fichero;
-	char caracter;
-	chdir(username);
-	fichero = fopen("mensajes_pendientes.txt", "rt");
-	if (fichero == NULL) {
-		printf("No se encuentra el fichero \"usuarios.txt\"\n");
-		return -1;
-	} else
-		printf("Fichero abierto correctamente.\n");
-
-	int i=0;
-	caracter = fgetc(fichero);
-	while (feof(fichero) == 0){
-		result->mensajes[i] = caracter;
-		caracter = fgetc(fichero);
-		i++;
+	int error= receiveMessage(username,result);
+	if(error!=0){
+		printf("ERROR: al recibirMensajesª\n");
 	}
-	result->mensajes[i]='\0';
-
-	// ?BORRAR EL CONTENIDO del FICHERO¿
-	if(fclose(fichero) != 0) {
-		printf("Error cerrando el fichero.\n");
-		return -1;
-	}
-	chdir("..");
-
-
-	//myMessage->msg = (xsd__string) malloc (IMS_MAX_MSG_SIZE);
-	// Not necessary with strcpy since uses null-terminated strings
-	// memset(myMessage->msg, 0, IMS_MAX_MSG_SIZE);
-	//strcpy (myMessage->msg, "Invoking the remote function receiveMessage simply retrieves this standard message from the server"); // always same msg
-
-	// Allocate space for the name field of the myMessage struct then copy it
-	//myMessage->name = (xsd__string) malloc (IMS_MAX_NAME_SIZE);
-	// Not necessary with strcpy since uses null-terminated strings
-	// memset(myMessage->name, 0, IMS_MAX_NAME_SIZE);
-	//strcpy(myMessage->name, "aServer");
-
 	return SOAP_OK;
 }
 

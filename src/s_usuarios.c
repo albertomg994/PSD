@@ -148,7 +148,7 @@ int addUser(struct datos_usuarios * t, xsd__string username) {
 
   /*Lo hago despues de comprobacion para asegurar que el usuario no existe */
   dir=mkdir(username,0777);
-
+  //chdir("Server");
   if(dir!=0){
     perror("Error al crear la carpeta\n");
     return -1;
@@ -169,9 +169,7 @@ int addUser(struct datos_usuarios * t, xsd__string username) {
 
     chdir("..");
     printf("Sea ha creado la carpeta %s\n",username);
-
-
-
+	 //chdir("..");
 
 	// Copiar el nuevo usuario en la estructura
 	strcpy(t->usuarios[i].username, username);
