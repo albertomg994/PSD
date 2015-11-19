@@ -13,6 +13,7 @@
 // Tipos, constantes y variables globales
 // -----------------------------------------------------------------------------
 #define DEBUG_MODE 1
+#define DEBUG_SIGINT 0
 
 struct datos_usuarios db;	// en mem. estática (todo)
 struct amistades_pendientes ap;
@@ -36,6 +37,7 @@ int main(int argc, char **argv){
 
 	int m, s;				// sockets
 	struct soap soap;
+	sigset_t grupo;		// grupo para enmascarar SIGINT
 
 	if (argc < 2) {
 		printf("Usage: %s <port>\n",argv[0]);
@@ -109,14 +111,19 @@ int main(int argc, char **argv){
 		// accept
 		s = soap_accept(&soap);
 
-	  if (s < 0) {
+		// Enmascarar SIGINT
+		if(DEBUG_SIGINT) printf("Enmascaro SIGINT...\n");
+		sigemptyset(&grupo);
+		sigaddset(&grupo, SIGINT);
+		sigprocmask(SIG_BLOCK, &grupo, NULL);
+
+		if (s < 0) {
 			soap_print_fault(&soap, stderr);
 			exit(-1);
-	  }
+		}
 
 		// Execute invoked operation
-	  soap_serve(&soap);
-	  printf("Después de servir una operación");
+		soap_serve(&soap);
 
 		// Clean up!
 		soap_end(&soap);
@@ -125,7 +132,17 @@ int main(int argc, char **argv){
 		saveUsersData(&db);
 		saveFriendsData(&la);
 
+		// Depurar la captura de CTRL+C
+		if(DEBUG_SIGINT) {
+			sigset_t pendientes;
+			sigpending(&pendientes);
+			if (sigismember(&pendientes, SIGINT))
+				printf("SIGINT está en pendientes...\n");
+			printf("Desenmascaro SIGINT\n");
+		}
+
 		// Desenmascarar SIGINIT
+		sigprocmask(SIG_UNBLOCK, &grupo, NULL);
 	}
 
 	return 0;
@@ -142,14 +159,6 @@ int ims__sendMessage (struct soap *soap, struct Message2 myMessage, int *result)
 	return SOAP_OK;
 }
 
-/* TODO: esto no compila porque hice el merge con la rama de denys todavía a
-   medias. Antes la cabecera de la función era:
-int ims__receiveMessage (struct soap *soap, struct Message *myMessage){
-	y por eso ahora no compila.
-
-						(CORREGIR CUANDO SE PUEDA)
-*/
-//int ims__receiveMessage (struct soap *soap, struct Message *myMessage){
 int ims__receiveMessage (struct soap* soap, char* username, struct ListaMensajes* result){
 
 	// Allocate space for the message field of the myMessage struct then copy it
@@ -230,9 +239,8 @@ int ims__darBaja(struct soap *soap, char* username, struct ResultMsg* result){
 	// 3. Borrar peticiones de amistad (en cualquier dirección) pendientes
 	if (res == 0) delUserRelatedFriendRequests(&ap, username);
 
-	// 4. Borrar mensajes y conversaciones
-	/*if (*result >= 0)
-		saveUsersData(&db);*/
+	// 4. TODO: Borrar mensajes y conversaciones
+
 	result->code = res;
 
 	return SOAP_OK;
@@ -274,8 +282,6 @@ int ims__login (struct soap *soap, char* username, struct ResultMsg *result) {
 		strcpy(result->msg, "ERROR (-1): El usuario indicado no existe.");
 	else if (result->code == -2)
 		strcpy(result->msg, "ERROR (-2): El usuario indicado ya tiene una sesión iniciada.");
-
-	if(DEBUG_MODE) printUsersData(&db);
 
 	return SOAP_OK;
 }
