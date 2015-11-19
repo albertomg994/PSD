@@ -50,8 +50,12 @@ int loadFriendsData(struct listas_amigos* la);
 int saveFriendsData(struct listas_amigos* la);
 void printFriendsData(struct listas_amigos* la);
 
+int loadPeticionesData(struct amistades_pendientes* ap);
+int savePeticionesData(struct amistades_pendientes* ap);
+void printPeticionesData(struct amistades_pendientes* ap);
+
 int getFriendList(char* username, struct listas_amigos* la, char* lista);
-int isFriendInList(struct listas_amigos* la, int pos, char* destinatario);
+int isFriendInList(struct listas_amigos* la, char* emisor, char* destinatario);
 
 void copy(struct amigos_usuario* dest, struct amigos_usuario* src);
 int searchUserInFriendList(struct listas_amigos * la, xsd__string username);

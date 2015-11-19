@@ -53,6 +53,9 @@ int main(int argc, char **argv){
 	// Cargamos la información de los amigos
 	if (loadFriendsData(&la) == -1) exit(-1);
 
+	// Cargamos las peticiones de amistad pendientes
+	if (loadPeticionesData(&ap) == -1) exit(-1);
+
 	// Bind to the specified port. Devuelve el socket primario del servidor.
 	m = soap_bind(&soap, NULL, atoi(argv[1]), 100);
 
@@ -63,14 +66,15 @@ int main(int argc, char **argv){
 	}
 
 	char opcion = -1;
-	while (opcion != '4') {
+	while (opcion != '5') {
 		printf("\n\ngSOAP server menu\n");
 		printf("=================\n");
 		printf("1.- Mostrar datos de usuarios\n");
 		printf("2.- Dar de alta un usuario\n");
 		printf("3.- Dar de baja un usuario\n");
-		printf("4.- Ponerse a la escucha (se perderá el control)\n");
-		printf("5.- Salir\n");
+		printf("4.- Mostrar peticiones de amistad pendientes\n");
+		printf("5.- Ponerse a la escucha (se perderá el control)\n");
+		printf("6.- Salir\n");
 
 		opcion = getchar();
 		clean_stdin();
@@ -98,9 +102,12 @@ int main(int argc, char **argv){
 			if(deleteUser(&db, name2) < 0)
 				printf("Error añadiendo a %s\n", name2);
 		}
-		else if (opcion == '5') {
+		else if (opcion == '4')
+			printPeticionesData(&ap);
+		else if (opcion == '6') {
 			saveUsersData(&db);
 			saveFriendsData(&la);
+			savePeticionesData(&ap);
 			exit(0);
 		}
 	}
@@ -131,6 +138,7 @@ int main(int argc, char **argv){
 		// Guardar los posibles cambios en fichero.
 		saveUsersData(&db);
 		saveFriendsData(&la);
+		savePeticionesData(&ap);
 
 		// Depurar la captura de CTRL+C
 		if(DEBUG_SIGINT) {
