@@ -40,6 +40,7 @@ int addFriendRequest(struct amistades_pendientes* ap, struct datos_usuarios* du,
 void delFriendRequest(struct amistades_pendientes* ap, char* emisor, char* receptor);
 void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amistades_pendientes* ap, struct ListaPeticiones *lista);
 void delUserRelatedFriendRequests(struct amistades_pendientes* ap, xsd__string username);
+int searchFriendRequest(struct amistades_pendientes* ap, xsd__string emisor, xsd__string destinatario);
 
 void createFriendListEntry(char* username, struct listas_amigos* la);
 int deleteFriendListEntry(struct listas_amigos * la, xsd__string username);
@@ -50,8 +51,12 @@ int loadFriendsData(struct listas_amigos* la);
 int saveFriendsData(struct listas_amigos* la);
 void printFriendsData(struct listas_amigos* la);
 
+int loadPeticionesData(struct amistades_pendientes* ap);
+int savePeticionesData(struct amistades_pendientes* ap);
+void printPeticionesData(struct amistades_pendientes* ap);
+
 int getFriendList(char* username, struct listas_amigos* la, char* lista);
-int isFriendInList(struct listas_amigos* la, int pos, char* destinatario);
+int isFriendInList(struct listas_amigos* la, char* emisor, char* destinatario);
 
 void copy(struct amigos_usuario* dest, struct amigos_usuario* src);
 int searchUserInFriendList(struct listas_amigos * la, xsd__string username);

@@ -25,10 +25,18 @@ int addFriendRequest(struct amistades_pendientes* ap, struct datos_usuarios* du,
 		return -4;
 
 	// Mandar petición a alguien que ya es nuestro amigo
-	if (isFriendInList(la, pos, destinatario) == 1)
+	if (isFriendInList(la, emisor, destinatario) == 1)
 		return -3;
 
+	// Ya ha mandado esta misma petición con anterioridad.
+	if (searchFriendRequest(ap, emisor, destinatario) >= 0) {
+		return -5;
+	}
 
+	// Ya hay una petición de amistad en sentido inverso
+	if (searchFriendRequest(ap, destinatario, emisor) >= 0) {
+		return -6;
+	}
 
 	// Añadir al array
 	strcpy(ap->amistades_pendientes[ap->nPeticiones].emisor, emisor);
@@ -53,7 +61,7 @@ void delFriendRequest(struct amistades_pendientes* ap, char* emisor, char* recep
 	int i = 0, salir = 0, j;
 
 	// Buscamos la petición que queremos borrar
-	while (salir == 0 && ap->nPeticiones) {
+	while (salir == 0 && i < ap->nPeticiones) {
 		if (strcmp(emisor, ap->amistades_pendientes[i].emisor) == 0 &&
 			 strcmp(receptor, ap->amistades_pendientes[i].destinatario) == 0) {
 				 // Desplazar desde i hasta el nPeticiones-2
@@ -113,6 +121,28 @@ void delUserRelatedFriendRequests(struct amistades_pendientes* ap, xsd__string u
 }
 
 /**
+ * Busca una petición de amistad en la estructura del servidor.
+ * @param ap Puntero a la estructura
+ * @param emisor Emisor de la petición
+ * @param destinatario Destinatario de la petición de amistad.
+ * @return El índice dentro de ap (si existe), o -1 si no existe.
+ */
+int searchFriendRequest(struct amistades_pendientes* ap, xsd__string emisor, xsd__string destinatario) {
+
+	int i = 0, pos = -1;
+
+	while (pos == -1 && i < ap->nPeticiones) {
+		// Si encontramos la petición en cuestión.
+		if (strcmp(emisor, ap->amistades_pendientes[i].emisor) == 0 &&
+			 strcmp(destinatario, ap->amistades_pendientes[i].destinatario) == 0) {
+				 pos = i;
+		}
+		i++;
+	}
+	return pos;
+}
+
+/**
  * Carga la "listas_amigos.txt" a la estructura del servidor.
  * @param la Puntero a la estructura del servidor.
  * @return 0 si éxito, -1 si error
@@ -136,7 +166,6 @@ int loadFriendsData(struct listas_amigos* la) {
 	while (fgets(line, IMS_MAX_NAME_SIZE*MAX_USERS + 1, fichero) != NULL) {
 
 		line[strlen(line)-1] = '\0';	// quitamos el '\n' del fichero
-		printf("Se ha leido: %s\n", line);
 
 		// Split user & friends in the line
 		int nAmigos = 0;
@@ -146,7 +175,6 @@ int loadFriendsData(struct listas_amigos* la) {
 		palabra = strtok (NULL, " ");							// Read 1st. friend
 
 		while (palabra != NULL) {
-			printf ("\tLeido amigo: %s\n",palabra);
 			strcpy(la->listas[nUsr].amigos[nAmigos], palabra);	// Copy friend
 			nAmigos++;
 			palabra = strtok (NULL, " ");								// Read friend
@@ -243,6 +271,115 @@ void printFriendsData(struct listas_amigos* la) {
 }
 
 /**
+ * Lee de fichero el contenido de la estructura del servidor que almacena
+ * las peticiones de amistad pendientes.
+ * @param ap Puntero a la estructura.
+ * @return 0 si éxito, -1 si error
+ */
+int loadPeticionesData(struct amistades_pendientes* ap) {
+
+	FILE *fichero;
+	char line[IMS_MAX_NAME_SIZE + 1];
+
+	// Abrir el fichero
+	fichero = fopen("peticiones_pendientes.txt", "rt");
+
+	if (fichero == NULL) {
+		printf("No se encuentra el fichero \"peticiones_pendientes.txt\"\n");
+		return -1;
+	} else
+		printf("peticiones_pendientes.txt abierto correctamente.\n");
+
+	// Leer los usuarios y sus amigos hasta fin de fichero
+	int nPeticiones = 0;
+	while (fgets(line, IMS_MAX_NAME_SIZE + 1, fichero) != NULL) {
+
+		// Set sender
+		line[strlen(line)-1] = '\0';	// quitamos el '\n' del fichero
+		strcpy(ap->amistades_pendientes[nPeticiones].emisor, line);
+
+		// Read and set receiver
+		fgets(line, IMS_MAX_NAME_SIZE + 1, fichero);
+		line[strlen(line)-1] = '\0';
+		strcpy(ap->amistades_pendientes[nPeticiones].destinatario, line);
+
+		nPeticiones++;
+	}
+	ap->nPeticiones = nPeticiones;
+
+	printPeticionesData(ap);
+
+	// Cerrar el fichero
+	if(fclose(fichero) != 0) {
+		printf("Error cerrando el fichero.\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+/**
+ * Guarda en fichero el contenido de la estructura del servidor que almacena
+ * las peticiones de amistad pendientes.
+ * @param ap Puntero a la estructura.
+ * @return 0 si éxito, -1 si error
+ */
+int savePeticionesData(struct amistades_pendientes* ap) {
+
+	// Abrir el fichero (sobrescribe)
+	FILE* fichero = fopen("peticiones_pendientes.txt", "wt");
+
+	// Check errors while opening
+	if (fichero == NULL) {
+		printf("No se encuentra el fichero \"peticiones_pendientes.txt\"\n");
+		return -1;
+	} else
+		printf("peticones_pendientes.txt abierto correctamente.\n");
+
+	// Escribir los datos
+	int i;
+	for (i = 0; i < ap->nPeticiones; i++) {
+		// write sender
+		fwrite(ap->amistades_pendientes[i].emisor, strlen(ap->amistades_pendientes[i].emisor), 1, fichero);
+		fputc('\n', fichero);
+
+		// write receiver
+		fwrite(ap->amistades_pendientes[i].destinatario, strlen(ap->amistades_pendientes[i].destinatario), 1, fichero);
+		fputc('\n',fichero);
+	}
+
+	// Cerrar el fichero
+	if(fclose(fichero) != 0) {
+		printf("Error cerrando el fichero.\n");
+		return -1;
+	}
+
+	return 0;
+}
+/**
+ * Imprime el contenido de la estructura del servidor que almacena las peticiones
+ * de amistad pendientes.
+ * @param ap Puntero a la estructura.
+ */
+void printPeticionesData(struct amistades_pendientes* ap) {
+	printf("===================================\n");
+	printf(" Peticiones de amistad pendientes  \n");
+	printf("===================================\n");
+	if(ap->nPeticiones == 0)
+		printf("     < vacía >     \n");
+	else {
+		int i;
+		for (i = 0; i < ap->nPeticiones; i++) {
+			printf("-----------------------------------\n");
+			printf(" * emisor: %s\n", ap->amistades_pendientes[i].emisor);
+			printf(" * destinatario: %s\n", ap->amistades_pendientes[i].destinatario);
+
+		}
+	}
+	printf("-----------------------------------\n");
+}
+
+/**
  * Añade una nueva relación de amistad a la estructura que las almacena.
  * @param persona1 Primer componente de la relación de amistad.
  * @param persona2 Segundo componente de la relación de amistad.
@@ -310,20 +447,23 @@ void createFriendListEntry(char* username, struct listas_amigos* la) {
 
 /**
  * Comprueba si 'destinatario' ya está en la lista de amigos de 'emisor'
- * @param emisor Emisor de la petición de amistad.
- * @param destinatario Receptro de la petición de amistad.
- * @return 0 si no está, 1 si ya existe.
+ * @param pos Posición del emisor en la lista de amigos.
+ * @param destinatario Receptor de la petición de amistad.
+ * @return 0 si no está, 1 si ya existe, -1 error
  */
-int isFriendInList(struct listas_amigos* la, int pos, char* destinatario) {
+int isFriendInList(struct listas_amigos* la, char* emisor, char* destinatario) {
 
-	// NOTA IMPORTANTE: doy por hecho que la posición de un usuario en la estructura
-	// de los usuarios registrados y la estructra de los amigos es la misma.
-	// Si no, esto petará.
+	int pos = searchUserInFriendList(la, emisor);
+	if (pos < 0)
+		return -1;
 
 	int i = 0, existe = 0;
+	printf("%s tiene %d amigos.\n", emisor, la->listas[pos].nAmigos);
 	while (existe == 0 && i < la->listas[pos].nAmigos) {
-		if (strcmp(la->listas[pos].amigos[i], destinatario)) // Encontramos el amigo
+		if (strcmp(la->listas[pos].amigos[i], destinatario)) {// Encontramos el amigo
 			existe = 1;
+			printf("%s es amigo de %s\n", emisor, destinatario);
+		}
 		else
 			i++;
 	}

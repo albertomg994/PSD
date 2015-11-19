@@ -73,7 +73,6 @@ int saveUsersData(struct datos_usuarios * t) {
 	for (i = 0; i < t->nUsers; i++) {
 		fwrite(t->usuarios[i].username, strlen(t->usuarios[i].username), 1, fichero);
 		fputc('\n',fichero);
-		printf("Escribimos en el fichero --> %s\n", t->usuarios[i].username);
 	}
 
 	// Cerrar el fichero

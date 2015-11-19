@@ -13,6 +13,7 @@
 // Tipos, constantes y variables globales
 // -----------------------------------------------------------------------------
 #define DEBUG_MODE 1
+#define DEBUG_SIGINT 0
 
 struct datos_usuarios db;	// en mem. estática (todo)
 struct amistades_pendientes ap;
@@ -36,6 +37,7 @@ int main(int argc, char **argv){
 
 	int m, s;				// sockets
 	struct soap soap;
+	sigset_t grupo;		// grupo para enmascarar SIGINT
 
 	if (argc < 2) {
 		printf("Usage: %s <port>\n",argv[0]);
@@ -51,6 +53,9 @@ int main(int argc, char **argv){
 	// Cargamos la información de los amigos
 	if (loadFriendsData(&la) == -1) exit(-1);
 
+	// Cargamos las peticiones de amistad pendientes
+	if (loadPeticionesData(&ap) == -1) exit(-1);
+
 	// Bind to the specified port. Devuelve el socket primario del servidor.
 	m = soap_bind(&soap, NULL, atoi(argv[1]), 100);
 
@@ -61,14 +66,15 @@ int main(int argc, char **argv){
 	}
 
 	char opcion = -1;
-	while (opcion != '4') {
+	while (opcion != '5') {
 		printf("\n\ngSOAP server menu\n");
 		printf("=================\n");
 		printf("1.- Mostrar datos de usuarios\n");
 		printf("2.- Dar de alta un usuario\n");
 		printf("3.- Dar de baja un usuario\n");
-		printf("4.- Ponerse a la escucha (se perderá el control)\n");
-		printf("5.- Salir\n");
+		printf("4.- Mostrar peticiones de amistad pendientes\n");
+		printf("5.- Ponerse a la escucha (se perderá el control)\n");
+		printf("6.- Salir\n");
 
 		opcion = getchar();
 		clean_stdin();
@@ -96,9 +102,12 @@ int main(int argc, char **argv){
 			if(deleteUser(&db, name2) < 0)
 				printf("Error añadiendo a %s\n", name2);
 		}
-		else if (opcion == '5') {
+		else if (opcion == '4')
+			printPeticionesData(&ap);
+		else if (opcion == '6') {
 			saveUsersData(&db);
 			saveFriendsData(&la);
+			savePeticionesData(&ap);
 			exit(0);
 		}
 	}
@@ -109,14 +118,19 @@ int main(int argc, char **argv){
 		// accept
 		s = soap_accept(&soap);
 
-	  if (s < 0) {
+		// Enmascarar SIGINT
+		if(DEBUG_SIGINT) printf("Enmascaro SIGINT...\n");
+		sigemptyset(&grupo);
+		sigaddset(&grupo, SIGINT);
+		sigprocmask(SIG_BLOCK, &grupo, NULL);
+
+		if (s < 0) {
 			soap_print_fault(&soap, stderr);
 			exit(-1);
-	  }
+		}
 
 		// Execute invoked operation
-	  soap_serve(&soap);
-	  printf("Después de servir una operación");
+		soap_serve(&soap);
 
 		// Clean up!
 		soap_end(&soap);
@@ -124,8 +138,19 @@ int main(int argc, char **argv){
 		// Guardar los posibles cambios en fichero.
 		saveUsersData(&db);
 		saveFriendsData(&la);
+		savePeticionesData(&ap);
+
+		// Depurar la captura de CTRL+C
+		if(DEBUG_SIGINT) {
+			sigset_t pendientes;
+			sigpending(&pendientes);
+			if (sigismember(&pendientes, SIGINT))
+				printf("SIGINT está en pendientes...\n");
+			printf("Desenmascaro SIGINT\n");
+		}
 
 		// Desenmascarar SIGINIT
+		sigprocmask(SIG_UNBLOCK, &grupo, NULL);
 	}
 
 	return 0;
@@ -185,9 +210,8 @@ int ims__darBaja(struct soap *soap, char* username, struct ResultMsg* result){
 	// 3. Borrar peticiones de amistad (en cualquier dirección) pendientes
 	if (res == 0) delUserRelatedFriendRequests(&ap, username);
 
-	// 4. Borrar mensajes y conversaciones
-	/*if (*result >= 0)
-		saveUsersData(&db);*/
+	// 4. TODO: Borrar mensajes y conversaciones
+
 	result->code = res;
 
 	return SOAP_OK;
@@ -229,8 +253,6 @@ int ims__login (struct soap *soap, char* username, struct ResultMsg *result) {
 		strcpy(result->msg, "ERROR (-1): El usuario indicado no existe.");
 	else if (result->code == -2)
 		strcpy(result->msg, "ERROR (-2): El usuario indicado ya tiene una sesión iniciada.");
-
-	if(DEBUG_MODE) printUsersData(&db);
 
 	return SOAP_OK;
 }
@@ -282,7 +304,11 @@ int ims__sendFriendRequest (struct soap *soap, struct PeticionAmistad p, struct 
 		strcpy(result->msg, "ERROR (-3): Este usuario ya es tu amigo.");
 	else if (result->code == -4)
 		strcpy(result->msg, "ERROR (-4): Este usuario no existe.");
-
+	else if (result->code == -5)
+		strcpy(result->msg, "ERROR (-5): Ya has mandado una petición de amistad a este usuario.");
+	else if (result->code == -6)
+		strcpy(result->msg, "ERROR (-6): Existe una petición equivalente en tu bandeja de entrada.");
+		
 	return SOAP_OK;
 }
 
