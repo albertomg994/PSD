@@ -7,7 +7,6 @@
 // Tipos, constantes y estructuras propias del cliente
 // -----------------------------------------------------------------------------
 #define DEBUG_MODE 1
-#define LOCALHOST "http://localhost:\0"
 
 struct MisAmigos {
 	int nElems;
@@ -18,7 +17,7 @@ struct MisAmigos {
 // Variables globales
 // -----------------------------------------------------------------------------
 struct soap soap;
-char serverURL[50];
+char* serverURL;
 char username_global[IMS_MAX_NAME_SIZE];
 struct MisAmigos mis_amigos; // Lo utlizo en los mensajes cuidado
 // -----------------------------------------------------------------------------
@@ -46,27 +45,28 @@ void menuAvanzado();
 // -----------------------------------------------------------------------------
 int main(int argc, char **argv) {
 
-  	struct Message myMsgB;
-	char* port;
+  struct Message myMsgB;
+  char *msg;
 
 	// Usage
-	if (argc != 2) { // Desaparece
-		printf("Usage: %s port\n",argv[0]);
+	if (argc != 3) {
+		printf("Usage: %s http://server:port message\n",argv[0]);
 		exit(0);
 	}
 
 	// 1. Init gSOAP environment
   	soap_init(&soap);
 
-	// 2. Obtain server address & port
-	port = argv[1];
-	serverURL[0] = '\0';
-	strcpy(serverURL, LOCALHOST);
-	strcat(serverURL, port);
+	// 2. Obtain server address
+	serverURL = argv[1];
+
+	// 3. Obtain message to be sent
+	msg = argv[2];
 
 	// Debug?
 	if (DEBUG_MODE){
 		printf ("Server to be used by client: %s\n", serverURL);
+		printf ("Message to be sent by client: %s\n", msg);
 	}
 
 	char opcion;
@@ -169,11 +169,9 @@ void iniciarSesion() {
 		exit(1);
 	}
 
-	// Imprimir resultado de la llamada
-	printf("%s\n", res.msg);
-
-	// Sólo si el inicio de sesión fue correcto, seguimos
-	if (res.code >= 0) {
+	if (res.code < 0)	// Error al inicial sesión
+		printf("%s\n", res.msg);
+	else {				// Inicio de sesión correcto
 		if (getFriendList() < 0)
 			printf("Error obteniendo tu lista de amigos del servidor.\n");
 		else
