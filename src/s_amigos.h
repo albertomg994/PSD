@@ -36,7 +36,7 @@ struct listas_amigos {
 // -----------------------------------------------------------------------------
 // Cabeceras de funciones
 // -----------------------------------------------------------------------------
-int addFriendRequest(struct amistades_pendientes* ap, struct datos_usuarios* du, struct listas_amigos* la, char* emisor, char* destinatario);
+int addFriendRequest(struct amistades_pendientes* ap, struct ListaUsuarios* lu, struct listas_amigos* la, char* emisor, char* destinatario);
 void delFriendRequest(struct amistades_pendientes* ap, char* emisor, char* receptor);
 void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amistades_pendientes* ap, struct ListaPeticiones *lista);
 void delUserRelatedFriendRequests(struct amistades_pendientes* ap, xsd__string username);

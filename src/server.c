@@ -15,16 +15,16 @@
 #define DEBUG_MODE 1
 #define DEBUG_SIGINT 0
 
-struct datos_usuarios db;	// en mem. estática (todo)
+struct ListaUsuarios lu;
 struct amistades_pendientes ap;
 struct listas_amigos la;
 
 /* Flag para activar el guardado. */
 volatile sig_atomic_t save_data = 0;
+
 // -----------------------------------------------------------------------------
 // Estructuras propias del servidor
 // -----------------------------------------------------------------------------
-
 
 // -----------------------------------------------------------------------------
 // Cabeceras de funciones
@@ -48,7 +48,7 @@ int main(int argc, char **argv){
 	soap_init(&soap);
 
 	// Cargamos la información de usuarios
-	if (loadUsersData(&db) == -1) exit(-1);
+	if (usr__loadListaUsuarios(&lu) == -1) exit(-1);
 
 	// Cargamos la información de los amigos
 	if (loadFriendsData(&la) == -1) exit(-1);
@@ -80,7 +80,7 @@ int main(int argc, char **argv){
 		clean_stdin();
 
 		if (opcion == '1') {
-			printUsersData(&db);
+			usr__printListaUsuarios(&lu);
 		}
 		else if (opcion == '2') {
 			printf("Nombre de usuario:");
@@ -89,7 +89,7 @@ int main(int argc, char **argv){
 			name[strlen(name)] = '\0';
 			clean_stdin();
 
-			if(addUser(&db, name) == -1)
+			if(usr__addUsuario(&lu, name) == -1)
 				printf("Error añadiendo a %s\n", name);
 		}
 		else if (opcion == '3') {
@@ -99,13 +99,13 @@ int main(int argc, char **argv){
 			name2[strlen(name2)] = '\0';
 			clean_stdin();
 
-			if(deleteUser(&db, name2) < 0)
+			if(usr__delUsuario(&lu, name2) < 0)
 				printf("Error añadiendo a %s\n", name2);
 		}
 		else if (opcion == '4')
 			printPeticionesData(&ap);
 		else if (opcion == '6') {
-			saveUsersData(&db);
+			usr__saveListaUsuarios(&lu);
 			saveFriendsData(&la);
 			savePeticionesData(&ap);
 			exit(0);
@@ -136,7 +136,7 @@ int main(int argc, char **argv){
 		soap_end(&soap);
 
 		// Guardar los posibles cambios en fichero.
-		saveUsersData(&db);
+		usr__saveListaUsuarios(&lu);
 		saveFriendsData(&la);
 		savePeticionesData(&ap);
 
@@ -180,7 +180,7 @@ int ims__darAlta (struct soap *soap, char* username, struct ResultMsg *result) {
 
 	result->msg = malloc(IMS_MAX_MSG_SIZE);
 
-	result->code = addUser(&db, username); //-1 err, -2 ya existe
+	result->code = usr__addUsuario(&lu, username); //-1 err, -2 ya existe
 
 	if (result->code == 0) {
 		strcpy(result->msg, "Usuario registrado correctamente.");
@@ -197,13 +197,13 @@ int ims__darAlta (struct soap *soap, char* username, struct ResultMsg *result) {
 int ims__darBaja(struct soap *soap, char* username, struct ResultMsg* result){
 
 	result->msg = malloc(IMS_MAX_MSG_SIZE);
-	int res;
+	int res = 0;
 
 	// 1. Borrar de la BD de usuarios
-	//res = deleteUser(&db, username);
-	int pos = searchUserInUserList(&db, username);
-	db.usuarios[pos].baja = 1;
-	printf("valor de lo que se ha hecho: %d\n", db.usuarios[pos].baja);
+	int pos = usr__findUsuario(&lu, username, NULL);
+	if (pos < 0) res = -1;
+	else lu.usuarios[pos].baja = 1;
+
 	// 2. Borrar de la estructura de amistades
 	if (res == 0) res = deleteFriendListEntry(&la, username); // 0 éxito, -1 err.
 
@@ -233,24 +233,17 @@ int ims__login (struct soap *soap, char* username, struct ResultMsg *result) {
 	result->msg = malloc(IMS_MAX_MSG_SIZE);
 
 	// Buscar si existe un usuario con este nombre o si ya tiene una sesión iniciada.
-	while (existe == 0 && i < db.nUsers) {
-		if (strcmp(db.usuarios[i].username, username) == 0) { // Existe el usuario
-			existe = 1;
-			if (db.usuarios[i].baja == 1) {// En el pasado, existió un usuario con este nombre
-				existe = 0;
-				break;
-			} else if (db.usuarios[i].connected == 0) {					// No tiene sesión iniciada
-				db.usuarios[i].connected = 1;
-				result->code = 0;
-			} else															// Tiene sesión iniciada
-				result->code = -2;
-		}
-		i++;
-	}
+	struct Usuario aux;
+	int pos = usr__findUsuario(&lu, username, &aux);
 
-	// Si no existía el usuario:
-	if (existe == 0)
+	if (pos < 0)							// No existe el usr__findUsuario
 		result->code = -1;
+	else if (aux.baja == 1)				// Existía pero se dio de baja
+		result->code = -1;
+	else if (aux.connected == 1)		// Ya tiene una sesión iniciada
+		result->code = -2;
+	else										// Login correcto
+		result->code = 0;
 
 	// Rellenamos la estructura que se devuelve al cliente
 	if (result->code == 0)
@@ -271,22 +264,17 @@ int ims__login (struct soap *soap, char* username, struct ResultMsg *result) {
  */
 int ims__logout (struct soap *soap, char* username, int *result) {
 
-	int existe = 0, i = 0;
-	if (DEBUG_MODE) printf("Recibido nombre de usuario: %s\n", username);
-
 	// Buscar si existe un usuario con el mismo nombre
-	while (existe == 0 && i < db.nUsers) {
-		if (strcmp(db.usuarios[i].username, username) == 0) {
-			existe = 1;
-			db.usuarios[i].connected = 0;
-		}
-		i++;
+	int pos = usr__findUsuario(&lu, username, NULL);
+
+	if (pos >= 0) {
+		lu.usuarios[pos].connected = 0;
+		*result = 0;
+	} else {
+		*result = -1;
 	}
 
-	if(existe == 0)
-		*result = -1;
-
-	if(DEBUG_MODE) printUsersData(&db);
+	if(DEBUG_MODE) usr__printListaUsuarios(&lu);
 
 	return SOAP_OK;
 }
@@ -298,7 +286,7 @@ int ims__sendFriendRequest (struct soap *soap, struct PeticionAmistad p, struct 
 
 	result->msg = malloc(IMS_MAX_MSG_SIZE);
 
-	result->code = addFriendRequest(&ap, &db, &la, p.emisor, p.receptor);
+	result->code = addFriendRequest(&ap, &lu, &la, p.emisor, p.receptor);
 
 	if (result->code == 0)
 		strcpy(result->msg, "Petición enviada correctamente.");

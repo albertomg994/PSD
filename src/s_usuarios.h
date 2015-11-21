@@ -9,26 +9,28 @@
 // -----------------------------------------------------------------------------
 #define MAX_USERS 100 // Nº máximo de usuarios dados de alta en el sistema.
 
-struct reg_usuario {
-	char username[IMS_MAX_NAME_SIZE];
-	int connected;
+struct Usuario {
 	int baja;
+	int connected;
+	char username[IMS_MAX_NAME_SIZE];
 };
 
-struct datos_usuarios {
-	int nUsers;
-	struct reg_usuario usuarios[MAX_USERS];
+struct ListaUsuarios {
+	int size;										// Nº de usuarios
+	struct Usuario usuarios[MAX_USERS];		// Array de usuarios
 };
 
 // -----------------------------------------------------------------------------
 // Cabeceras de funciones
 // -----------------------------------------------------------------------------
-int loadUsersData(struct datos_usuarios * t);
-int saveUsersData(struct datos_usuarios * t);
-int printUsersData(struct datos_usuarios * t);
+int usr__loadListaUsuarios(struct ListaUsuarios* lu);
+int usr__saveListaUsuarios(struct ListaUsuarios* lu);
+int usr__printListaUsuarios(struct ListaUsuarios* lu);
 
-int addUser(struct datos_usuarios * t, xsd__string username);
-int deleteUser(struct datos_usuarios * t, xsd__string username);
-int searchUserInUserList(struct datos_usuarios * t, xsd__string username);
+int usr__addUsuario(struct ListaUsuarios* lu, xsd__string username);
+int usr__delUsuario(struct ListaUsuarios* lu, xsd__string username);
+int usr__findUsuario(struct ListaUsuarios* lu, xsd__string username, struct Usuario* copy);
+
+void usr__copyUsuario(struct Usuario* dst, struct Usuario* src);
 
 #endif

@@ -9,7 +9,7 @@
  * @param destinatario Destinatario de la petición de amistad
  * @return 0 si éxito, -1 si la lista está llena, -2 petición a si mismo, -3 ya es tu amigo, -4 no existe
  */
-int addFriendRequest(struct amistades_pendientes* ap, struct datos_usuarios* du, struct listas_amigos* la, char* emisor, char* destinatario) {
+int addFriendRequest(struct amistades_pendientes* ap, struct ListaUsuarios* lu, struct listas_amigos* la, char* emisor, char* destinatario) {
 
 	// Lista de amigos llena
 	if (ap->nPeticiones >= MAX_AMISTADES_PENDIENTES)
@@ -20,7 +20,7 @@ int addFriendRequest(struct amistades_pendientes* ap, struct datos_usuarios* du,
 		return -2;
 
 	// El destinatario no existe
-	int pos = searchUserInUserList(du, destinatario);
+	int pos = usr__findUsuario(lu, destinatario, NULL);
 	if (pos == -1)
 		return -4;
 
