@@ -214,7 +214,7 @@ int usr__findUsuario(struct ListaUsuarios* lu, xsd__string username, struct Usua
 
 	while (pos == -1 && i < lu->size) {
 		// Si encontramos el usuario buscado, nos quedamos con una copia y su posición.
-		if (strcmp(lu->usuarios[i].username, username) == 0) {
+		if (strcmp(lu->usuarios[i].username, username) == 0 && lu->usuarios[i].baja == 0) {
 			if (copy != NULL)
 				usr__copyUsuario(copy, &lu->usuarios[i]);
 			pos = i;

@@ -261,6 +261,8 @@ void enviarMensaje() {
 	char receptor[IMS_MAX_NAME_SIZE];
 	int res,i,find=0;
 
+	getFriendList(); // Obtener la última versión.
+
 	// 1. Poner el mensaje
 	printf("Introduce el texto:");
 	scanf("%255s", text);
@@ -409,6 +411,8 @@ void receiveFriendRequests() {
  * Imprime la lista de amigos del cliente.
  */
 void showFriends() {
+
+	getFriendList(); // Get last version of list
 
 	printf("Tus amigos son:\n");
 	printf("---------------\n");
