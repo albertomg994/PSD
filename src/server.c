@@ -16,8 +16,8 @@
 #define DEBUG_SIGINT 0
 
 struct ListaUsuarios lu;
-struct amistades_pendientes ap;
-struct listas_amigos la;
+struct ListaAmistadesPend ap;
+struct ListasAmigos la;
 
 /* Flag para activar el guardado. */
 volatile sig_atomic_t save_data = 0;
@@ -51,10 +51,10 @@ int main(int argc, char **argv){
 	if (usr__loadListaUsuarios(&lu) == -1) exit(-1);
 
 	// Cargamos la información de los amigos
-	if (loadFriendsData(&la) == -1) exit(-1);
+	if (frd__loadFriendsData(&la) == -1) exit(-1);
 
 	// Cargamos las peticiones de amistad pendientes
-	if (loadPeticionesData(&ap) == -1) exit(-1);
+	if (frq__loadPeticiones(&ap) == -1) exit(-1);
 
 	// Bind to the specified port. Devuelve el socket primario del servidor.
 	m = soap_bind(&soap, NULL, atoi(argv[1]), 100);
@@ -103,11 +103,11 @@ int main(int argc, char **argv){
 				printf("Error añadiendo a %s\n", name2);
 		}
 		else if (opcion == '4')
-			printPeticionesData(&ap);
+			frq__printPeticiones(&ap);
 		else if (opcion == '6') {
 			usr__saveListaUsuarios(&lu);
-			saveFriendsData(&la);
-			savePeticionesData(&ap);
+			frd__saveFriendsData(&la);
+			frq__savePeticiones(&ap);
 			exit(0);
 		}
 	}
@@ -137,8 +137,8 @@ int main(int argc, char **argv){
 
 		// Guardar los posibles cambios en fichero.
 		usr__saveListaUsuarios(&lu);
-		saveFriendsData(&la);
-		savePeticionesData(&ap);
+		frd__saveFriendsData(&la);
+		frq__savePeticiones(&ap);
 
 		// Depurar la captura de CTRL+C
 		if(DEBUG_SIGINT) {
@@ -184,7 +184,7 @@ int ims__darAlta (struct soap *soap, char* username, struct ResultMsg *result) {
 
 	if (result->code == 0) {
 		strcpy(result->msg, "Usuario registrado correctamente.");
-		createFriendListEntry(username, &la);
+		frd__createFriendListEntry(&la, username);
 	}
 	else if (result->code == -1)
 		strcpy(result->msg, "ERROR (-1): Error interno del servidor.");
@@ -205,13 +205,13 @@ int ims__darBaja(struct soap *soap, char* username, struct ResultMsg* result){
 	else lu.usuarios[pos].baja = 1;
 
 	// 2. Borrar de la estructura de amistades
-	if (res == 0) res = deleteFriendListEntry(&la, username); // 0 éxito, -1 err.
+	if (res == 0) res = frd__deleteFriendListEntry(&la, username); // 0 éxito, -1 err.
 
 	// 3. Borrar también de las listas de amigos de otras personas.
-	deleteUserFromEverybodyFriendList(&la, username);
+	frd__deleteUserFromEverybodyFriendList(&la, username);
 
 	// 3. Borrar peticiones de amistad (en cualquier dirección) pendientes
-	if (res == 0) delUserRelatedFriendRequests(&ap, username);
+	if (res == 0) frq__delUserRelatedFriendRequests(&ap, username);
 
 	// 4. TODO: Borrar mensajes y conversaciones
 
@@ -282,11 +282,13 @@ int ims__logout (struct soap *soap, char* username, int *result) {
 /**
  * Servicio gSOAP para enviar peticiones de amistad.
  */
-int ims__sendFriendRequest (struct soap *soap, struct PeticionAmistad p, struct ResultMsg *result) {
+int ims__sendFriendRequest (struct soap *soap, struct IMS_PeticionAmistad p, struct ResultMsg *result) {
 
+	printf("ims__sendFriendRequest()\n");
+	
 	result->msg = malloc(IMS_MAX_MSG_SIZE);
 
-	result->code = addFriendRequest(&ap, &lu, &la, p.emisor, p.receptor);
+	result->code = frq__addFriendRequest(&ap, &lu, &la, p.emisor, p.receptor);
 
 	if (result->code == 0)
 		strcpy(result->msg, "Petición enviada correctamente.");
@@ -315,17 +317,17 @@ int ims__sendFriendRequest (struct soap *soap, struct PeticionAmistad p, struct 
 int ims__getAllFriendRequests (struct soap* soap, char* username, struct ListaPeticiones *result) {
 
 	// Variable para la respuesta
-	result->nElems = 0;
+	result->size = 0;
 	result->peticiones = (xsd__string) malloc(MAX_AMISTADES_PENDIENTES*IMS_MAX_NAME_SIZE + 1);
 	result->peticiones[0] = '\0'; // Si no lo ponemos, riesgo de violación de segmento.
 
 	// Rellenar la estructura
-	searchPendingFriendRequests(username, &ap, result);
+	frq__retrievePendingFriendRequests(username, &ap, result);
 
 	// Mostrar la estructura
 	printf("Contenido de la estructura:\n");
 	printf("---------------------------\n");
-	printf("result->nPeticiones = %d\n", result->nElems);
+	printf("result->nPeticiones = %d\n", result->size);
 	printf("Nombres: %s\n", result->peticiones);
 
 	return SOAP_OK;
@@ -345,14 +347,14 @@ int ims__answerFriendRequest (struct soap* soap, struct RespuestaPeticionAmistad
 
 	if(rp.aceptada == 1) {
 		printf("%s ha aceptado la petición de amistad de %s.\n", rp.receptor, rp.emisor);
-		*result = addFriendToList(&la, rp.emisor, rp.receptor);
-		saveFriendsData(&la); /* TODO: esto habrá que quitarlo */
+		*result = frd__addFriendRelationship(&la, rp.emisor, rp.receptor);
+		frd__saveFriendsData(&la); /* TODO: esto habrá que quitarlo */
 	}
 	else
 		printf("%s ha denegado la petición de amistad de %s.\n", rp.receptor, rp.emisor);
 
 	// Borramos la petición de amistad de la estructura en memoria
-	delFriendRequest(&ap, rp.emisor, rp.receptor);
+	frq__delFriendRequest(&ap, rp.emisor, rp.receptor);
 
 	return SOAP_OK;
 }
@@ -368,7 +370,7 @@ int ims__getFriendList(struct soap* soap, char* username,  struct ListaAmigos* r
 	result->amigos = malloc(IMS_MAX_NAME_SIZE*IMS_MAX_AMIGOS + 1);
 	result->amigos[0] = '\0'; // Si no lo ponemos, violación de segmento al strcat()
 
-	getFriendList(username, &la, result->amigos);
+	frd__getFriendList(&la, username, result->amigos);
 
 	return SOAP_OK;
 }

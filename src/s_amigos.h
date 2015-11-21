@@ -9,56 +9,64 @@
 // Tipos, constantes y estructuras
 // -----------------------------------------------------------------------------
 
-struct peticion_amistad {
+/* Estructura que representa una petición de amistad */
+struct PeticionAmistad {
 	char emisor[IMS_MAX_NAME_SIZE];
 	char destinatario[IMS_MAX_NAME_SIZE];
 };
 
 /* Estructura del servidor que almacena todas las peticiones de amistad
    pendientes de procesar. */
-struct amistades_pendientes {
-	int nPeticiones;
-	struct peticion_amistad amistades_pendientes[MAX_AMISTADES_PENDIENTES];
+struct ListaAmistadesPend {
+	int size;
+	struct PeticionAmistad peticiones[MAX_AMISTADES_PENDIENTES];
 };
 
-struct amigos_usuario {
-	int nAmigos;
-	char usuario[IMS_MAX_NAME_SIZE];
-	char amigos[IMS_MAX_AMIGOS][IMS_MAX_NAME_SIZE];
+/* Estructura del servidor que almacena la lista de amigos de un usuario */
+struct AmigosUsuario {
+	int size;													// Nº amigos del usuario
+	char usuario[IMS_MAX_NAME_SIZE];						// Nombre del usuario
+	char amigos[IMS_MAX_AMIGOS][IMS_MAX_NAME_SIZE];	// Lista de amigos
 };
 
 /* Estructura del servidor que almacena la lista de amigos de cada usuario. */
-struct listas_amigos {
-	int nUsuarios;
-	struct amigos_usuario listas [MAX_USERS];
+struct ListasAmigos {
+	int size;											// Nº usuarios del sistema
+	struct AmigosUsuario listas [MAX_USERS];	// Lista de amigos de cada usuario
 };
 
 // -----------------------------------------------------------------------------
 // Cabeceras de funciones
 // -----------------------------------------------------------------------------
-int addFriendRequest(struct amistades_pendientes* ap, struct ListaUsuarios* lu, struct listas_amigos* la, char* emisor, char* destinatario);
-void delFriendRequest(struct amistades_pendientes* ap, char* emisor, char* receptor);
-void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amistades_pendientes* ap, struct ListaPeticiones *lista);
-void delUserRelatedFriendRequests(struct amistades_pendientes* ap, xsd__string username);
-int searchFriendRequest(struct amistades_pendientes* ap, xsd__string emisor, xsd__string destinatario);
+// Funciones relacionadas con peticiones de amistad
+int  frq__loadPeticiones  (struct ListaAmistadesPend* ap);
+int  frq__savePeticiones  (struct ListaAmistadesPend* ap);
+void frq__printPeticiones (struct ListaAmistadesPend* ap);
 
-void createFriendListEntry(char* username, struct listas_amigos* la);
-int deleteFriendListEntry(struct listas_amigos * la, xsd__string username);
+int  frq__addFriendRequest  (struct ListaAmistadesPend* ap, struct ListaUsuarios* lu, struct ListasAmigos* la, char* emisor, char* destinatario);
+void frq__delFriendRequest  (struct ListaAmistadesPend* ap, char* emisor, char* receptor);
+int  frq__findFriendRequest (struct ListaAmistadesPend* ap, xsd__string emisor, xsd__string destinatario);
+void frq__copyFriendRequest (struct PeticionAmistad* dst, struct PeticionAmistad* src);
 
-void deleteUserFromEverybodyFriendList(struct listas_amigos* la, xsd__string username);
+void frq__retrievePendingFriendRequests (char username[IMS_MAX_NAME_SIZE], struct ListaAmistadesPend* ap, struct ListaPeticiones *lista);
+void frq__delUserRelatedFriendRequests  (struct ListaAmistadesPend* ap, xsd__string username);
 
-int loadFriendsData(struct listas_amigos* la);
-int saveFriendsData(struct listas_amigos* la);
-void printFriendsData(struct listas_amigos* la);
+// Funciones relacionadas 'Listas de amigos'
+int  frd__loadFriendsData (struct ListasAmigos* la);
+int  frd__saveFriendsData (struct ListasAmigos* la);
+void frd__printFriendsData(struct ListasAmigos* la);
 
-int loadPeticionesData(struct amistades_pendientes* ap);
-int savePeticionesData(struct amistades_pendientes* ap);
-void printPeticionesData(struct amistades_pendientes* ap);
+void frd__createFriendListEntry (struct ListasAmigos* la, char* username);
+int  frd__deleteFriendListEntry (struct ListasAmigos* la, xsd__string username);
 
-int getFriendList(char* username, struct listas_amigos* la, char* lista);
-int isFriendInList(struct listas_amigos* la, char* emisor, char* destinatario);
+int  frd__getFriendList  (struct ListasAmigos* la, char* username, char* lista);
+int  frd__isFriendInList (struct ListasAmigos* la, char* emisor, char* destinatario);
 
-void copy(struct amigos_usuario* dest, struct amigos_usuario* src);
-int searchUserInFriendList(struct listas_amigos * la, xsd__string username);
+int  frd__addFriendRelationship (struct ListasAmigos* la, char* persona1, char* persona2);
+void frd__deleteUserFromEverybodyFriendList (struct ListasAmigos* la, xsd__string username);
+
+// Funciones relacionadas con 'AmigosUsuario'
+int  frd__findAmigosUsuario (struct ListasAmigos* la, xsd__string username);
+void frd__copyAmigosUsuario (struct AmigosUsuario* dest, struct AmigosUsuario* src);
 
 #endif

@@ -29,7 +29,7 @@ struct Message2 {
 	char* msg;
 };
 
-struct PeticionAmistad {
+struct IMS_PeticionAmistad {
 	char* emisor;
 	char* receptor;
 };
@@ -43,7 +43,7 @@ struct RespuestaPeticionAmistad {
 /* Respuesta del servidor con todas las peticiones de amistad
 	pendientes para un cliente. */
 struct ListaPeticiones {
-	int nElems;
+	int size;
 	xsd__string peticiones; 	// Nombres de las personas, separados por ' '
 };
 
@@ -90,7 +90,7 @@ int ims__logout (char* username, int *result);
 // Una sola invocación que revise mensajes, peticiones de amistad, avisos de entrega
 
 // Enviar una petición de amistad
-int ims__sendFriendRequest (struct PeticionAmistad p, struct ResultMsg* result);
+int ims__sendFriendRequest (struct IMS_PeticionAmistad p, struct ResultMsg* result);
 
 // Enviar una petición de amistad
 int ims__answerFriendRequest (struct RespuestaPeticionAmistad rp, int* result);

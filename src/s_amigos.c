@@ -3,16 +3,127 @@
 #include <string.h>
 
 /**
+ * Lee de fichero el contenido de la estructura del servidor que almacena
+ * las peticiones de amistad pendientes.
+ * @param ap Puntero a la estructura.
+ * @return 0 si éxito, -1 si error
+ */
+int frq__loadPeticiones(struct ListaAmistadesPend* ap) {
+
+	FILE *fichero;
+	char line[IMS_MAX_NAME_SIZE + 1];
+
+	// Abrir el fichero
+	fichero = fopen("peticiones_pendientes.txt", "rt");
+
+	if (fichero == NULL) {
+		printf("No se encuentra el fichero \"peticiones_pendientes.txt\"\n");
+		return -1;
+	} else
+		printf("peticiones_pendientes.txt abierto correctamente.\n");
+
+	// Leer los usuarios y sus amigos hasta fin de fichero
+	int nPeticiones = 0;
+	while (fgets(line, IMS_MAX_NAME_SIZE + 1, fichero) != NULL) {
+
+		// Set sender
+		line[strlen(line)-1] = '\0';	// quitamos el '\n' del fichero
+		strcpy(ap->peticiones[nPeticiones].emisor, line);
+
+		// Read and set receiver
+		fgets(line, IMS_MAX_NAME_SIZE + 1, fichero);
+		line[strlen(line)-1] = '\0';
+		strcpy(ap->peticiones[nPeticiones].destinatario, line);
+
+		nPeticiones++;
+	}
+	ap->size = nPeticiones;
+
+	frq__printPeticiones(ap);
+
+	// Cerrar el fichero
+	if(fclose(fichero) != 0) {
+		printf("Error cerrando el fichero.\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+/**
+ * Guarda en fichero el contenido de la estructura del servidor que almacena
+ * las peticiones de amistad pendientes.
+ * @param ap Puntero a la estructura.
+ * @return 0 si éxito, -1 si error
+ */
+int frq__savePeticiones(struct ListaAmistadesPend* ap) {
+
+	// Abrir el fichero (sobrescribe)
+	FILE* fichero = fopen("peticiones_pendientes.txt", "wt");
+
+	// Check errors while opening
+	if (fichero == NULL) {
+		printf("No se encuentra el fichero \"peticiones_pendientes.txt\"\n");
+		return -1;
+	} else
+		printf("peticones_pendientes.txt abierto correctamente.\n");
+
+	// Escribir los datos
+	int i;
+	for (i = 0; i < ap->size; i++) {
+		// write sender
+		fwrite(ap->peticiones[i].emisor, strlen(ap->peticiones[i].emisor), 1, fichero);
+		fputc('\n', fichero);
+
+		// write receiver
+		fwrite(ap->peticiones[i].destinatario, strlen(ap->peticiones[i].destinatario), 1, fichero);
+		fputc('\n',fichero);
+	}
+
+	// Cerrar el fichero
+	if(fclose(fichero) != 0) {
+		printf("Error cerrando el fichero.\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+/**
+ * Imprime el contenido de la estructura del servidor que almacena las peticiones
+ * de amistad pendientes.
+ * @param ap Puntero a la estructura.
+ */
+void frq__printPeticiones(struct ListaAmistadesPend* ap) {
+	printf("===================================\n");
+	printf(" Peticiones de amistad pendientes  \n");
+	printf("===================================\n");
+	if(ap->size == 0)
+		printf("            < vacía >           \n");
+	else {
+		int i;
+		for (i = 0; i < ap->size; i++) {
+			printf("-----------------------------------\n");
+			printf(" * emisor: %s\n", ap->peticiones[i].emisor);
+			printf(" * destinatario: %s\n", ap->peticiones[i].destinatario);
+		}
+	}
+	printf("-----------------------------------\n");
+}
+
+/**
  * Añade una petición de amistad al array de peticiones pendientes en el servidor.
  * @param ap Estructura que almacena las peticiones
  * @param emisor Emisor de la petición de amistad
  * @param destinatario Destinatario de la petición de amistad
  * @return 0 si éxito, -1 si la lista está llena, -2 petición a si mismo, -3 ya es tu amigo, -4 no existe
  */
-int addFriendRequest(struct amistades_pendientes* ap, struct ListaUsuarios* lu, struct listas_amigos* la, char* emisor, char* destinatario) {
+int frq__addFriendRequest(struct ListaAmistadesPend* ap, struct ListaUsuarios* lu, struct ListasAmigos* la, char* emisor, char* destinatario) {
+
+	printf("frq__addFriendRequest()\n");
 
 	// Lista de amigos llena
-	if (ap->nPeticiones >= MAX_AMISTADES_PENDIENTES)
+	if (ap->size >= MAX_AMISTADES_PENDIENTES)
 		return -1;
 
 	// Cliente se manda petición a si mismo
@@ -25,98 +136,45 @@ int addFriendRequest(struct amistades_pendientes* ap, struct ListaUsuarios* lu, 
 		return -4;
 
 	// Mandar petición a alguien que ya es nuestro amigo
-	if (isFriendInList(la, emisor, destinatario) == 1)
+	if (frd__isFriendInList(la, emisor, destinatario) == 1) // TODO: PROBABLEMENTE HAY UN BUG AQÚI!!
 		return -3;
 
 	// Ya ha mandado esta misma petición con anterioridad.
-	if (searchFriendRequest(ap, emisor, destinatario) >= 0) {
+	if (frq__findFriendRequest(ap, emisor, destinatario) >= 0) {
 		return -5;
 	}
 
 	// Ya hay una petición de amistad en sentido inverso
-	if (searchFriendRequest(ap, destinatario, emisor) >= 0) {
+	if (frq__findFriendRequest(ap, destinatario, emisor) >= 0) {
 		return -6;
 	}
 
-	// Añadir al array
-	strcpy(ap->amistades_pendientes[ap->nPeticiones].emisor, emisor);
-	strcpy(ap->amistades_pendientes[ap->nPeticiones].destinatario, destinatario);
-
-	printf("peticion[%d].emisor = %s\n", ap->nPeticiones, ap->amistades_pendientes[ap->nPeticiones].emisor);
-	printf("peticion[%d].destinatario = %s\n", ap->nPeticiones, ap->amistades_pendientes[ap->nPeticiones].destinatario);
-
-	ap->nPeticiones++;
+	// Añadir a la lista la nueva petición
+	strcpy(ap->peticiones[ap->size].emisor, emisor);
+	strcpy(ap->peticiones[ap->size].destinatario, destinatario);
+	ap->size++;
 
 	return 0;
 }
 
 /**
  * Borra una petición de amistad de la estructura del servidor. Se invoca desde
- * el servicio gSOAP.
+ * el servicio gSOAP. Si no existe dicha petición, la operación no tiene efecto.
  * @param ap Puntero a la estructura del servidor.
  * @param old Petición de amistad a borrar.
  */
-void delFriendRequest(struct amistades_pendientes* ap, char* emisor, char* receptor) {
+void frq__delFriendRequest(struct ListaAmistadesPend* ap, char* emisor, char* receptor) {
 
-	int i = 0, salir = 0, j;
+	int i;
 
 	// Buscamos la petición que queremos borrar
-	while (salir == 0 && i < ap->nPeticiones) {
-		if (strcmp(emisor, ap->amistades_pendientes[i].emisor) == 0 &&
-			 strcmp(receptor, ap->amistades_pendientes[i].destinatario) == 0) {
-				 // Desplazar desde i hasta el nPeticiones-2
-				 for (j = i; j < ap->nPeticiones - 1; j++) {
-					 strcpy(ap->amistades_pendientes[j].emisor, ap->amistades_pendientes[j+1].emisor);
-					 strcpy(ap->amistades_pendientes[j].destinatario, ap->amistades_pendientes[j+1].destinatario);
-				 }
-				 ap->nPeticiones--;
-				 salir = 1;
-		}
-		i++;
-	}
-}
+	int pos = frq__findFriendRequest(ap, emisor, receptor);
 
-/**
- * Busca las peticiones de un usuario y las mete en la estructura.
- * @param username Nombre del usuario que solicita sus peticiones pendientes.
- * @param ap Puntero a la estructura del servidor con todas las peticiones.
- * @param lista Puntero a la estructura que devolverá la llamada gSOAP.
- */
-void searchPendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct amistades_pendientes* ap, struct ListaPeticiones *lista) {
-
-	int i;
-	for (i = 0; i < ap->nPeticiones; i++) {
-		// Si el usuario coincide, añadirlo a la respuesta
-		if(strcmp(username, ap->amistades_pendientes[i].destinatario) == 0) {
-
-			strcat(lista->peticiones, ap->amistades_pendientes[i].emisor);	// Añadir a la lista
-
-			if (i < ap->nPeticiones -1)
-				strcat(lista->peticiones, " \0"); // Add space
-
-			lista->nElems++;
-		}
-	}
-}
-
-/**
- * Elimina todas las peticiones de amistad pendientes relacionadas con un
- * usuario (para cuando se da de baja).
- * @param ap Puntero a la estructura del servidor con las peticiones pendientes.
- * @param username Nombre del usuario que se da de baja.
- */
-void delUserRelatedFriendRequests(struct amistades_pendientes* ap, xsd__string username) {
-	int i;
-	for (i = 0; i < ap->nPeticiones; i++) {
-		if (strcmp(username, ap->amistades_pendientes[i].emisor) == 0 || strcmp(username, ap->amistades_pendientes[i].destinatario) == 0) {
-			// Desplazar todas las de la derecha.
-			ap->nPeticiones--;
-			int j;
-			for (j = i; j < ap->nPeticiones; j++) {
-				strcpy(ap->amistades_pendientes[i].emisor, ap->amistades_pendientes[i+1].emisor);
-				strcpy(ap->amistades_pendientes[i].destinatario, ap->amistades_pendientes[i+1].destinatario);
-			}
-		}
+	// Si existía, la borramos (i.e. desplazar las de la derecha)
+	if (pos >= 0) {
+		for (i = pos; i < ap->size - 1; i++)
+			frq__copyFriendRequest(&ap->peticiones[i], &ap->peticiones[i+1]);
+		ap->size--;
 	}
 }
 
@@ -127,19 +185,73 @@ void delUserRelatedFriendRequests(struct amistades_pendientes* ap, xsd__string u
  * @param destinatario Destinatario de la petición de amistad.
  * @return El índice dentro de ap (si existe), o -1 si no existe.
  */
-int searchFriendRequest(struct amistades_pendientes* ap, xsd__string emisor, xsd__string destinatario) {
+int frq__findFriendRequest(struct ListaAmistadesPend* ap, xsd__string emisor, xsd__string destinatario) {
 
 	int i = 0, pos = -1;
 
-	while (pos == -1 && i < ap->nPeticiones) {
+	while (pos == -1 && i < ap->size) {
 		// Si encontramos la petición en cuestión.
-		if (strcmp(emisor, ap->amistades_pendientes[i].emisor) == 0 &&
-			 strcmp(destinatario, ap->amistades_pendientes[i].destinatario) == 0) {
+		if (strcmp(emisor, ap->peticiones[i].emisor) == 0 &&
+			 strcmp(destinatario, ap->peticiones[i].destinatario) == 0) {
 				 pos = i;
 		}
-		i++;
+		else
+			i++;
 	}
 	return pos;
+}
+
+/**
+ * Copia una petición de amistad en otra.
+ * @param dst Puntero a la variable destino.
+ * @param src Puntero a la variable origen.
+ */
+void frq__copyFriendRequest (struct PeticionAmistad* dst, struct PeticionAmistad* src) {
+	strcpy(dst->emisor, src->emisor);
+	strcpy(dst->destinatario, src->destinatario);
+}
+
+/**
+ * Busca las peticiones de un usuario y las mete en la estructura.
+ * @param username Nombre del usuario que solicita sus peticiones pendientes.
+ * @param ap Puntero a la estructura del servidor con todas las peticiones.
+ * @param lista Puntero a la estructura que devolverá la llamada gSOAP.
+ */
+void frq__retrievePendingFriendRequests(char username[IMS_MAX_NAME_SIZE], struct ListaAmistadesPend* ap, struct ListaPeticiones* lista) {
+
+	int i;
+	for (i = 0; i < ap->size; i++) {
+		// Si el usuario coincide, añadirlo a la respuesta
+		if(strcmp(username, ap->peticiones[i].destinatario) == 0) {
+
+			strcat(lista->peticiones, ap->peticiones[i].emisor);	// Añadir a la lista
+
+			// Añado siempre el espacio (en el malloc de server.c ya contemplé esto)
+			strcat(lista->peticiones, " ");
+
+			lista->size++;
+		}
+	}
+}
+
+/**
+ * Elimina todas las peticiones de amistad pendientes relacionadas con un
+ * usuario (para cuando se da de baja).
+ * @param ap Puntero a la estructura del servidor con las peticiones pendientes.
+ * @param username Nombre del usuario que se da de baja.
+ */
+void frq__delUserRelatedFriendRequests(struct ListaAmistadesPend* ap, xsd__string username) {
+
+	int i, j;
+
+	for (i = 0; i < ap->size; i++) {
+		if (strcmp(username, ap->peticiones[i].emisor) == 0 || strcmp(username, ap->peticiones[i].destinatario) == 0) {
+			ap->size--;
+			// Desplazar todas las de la derecha.
+			for (j = i; j < ap->size; j++)
+				frq__copyFriendRequest(&ap->peticiones[j], &ap->peticiones[j+1]);
+		}
+	}
 }
 
 /**
@@ -147,7 +259,7 @@ int searchFriendRequest(struct amistades_pendientes* ap, xsd__string emisor, xsd
  * @param la Puntero a la estructura del servidor.
  * @return 0 si éxito, -1 si error
  */
-int loadFriendsData(struct listas_amigos* la) {
+int frd__loadFriendsData(struct ListasAmigos* la) {
 
 	FILE *fichero;
 	char line[IMS_MAX_NAME_SIZE*MAX_USERS + 1];
@@ -180,12 +292,12 @@ int loadFriendsData(struct listas_amigos* la) {
 			palabra = strtok (NULL, " ");								// Read friend
 		}
 
-		la->listas[nUsr].nAmigos = nAmigos;						// Set num. friends
+		la->listas[nUsr].size = nAmigos;						// Set num. friends
 		nUsr++;
 	}
-	la->nUsuarios = nUsr;
+	la->size = nUsr;
 
-	printFriendsData(la);
+	frd__printFriendsData(la);
 
 	// Cerrar el fichero
 	if(fclose(fichero) != 0) {
@@ -201,7 +313,7 @@ int loadFriendsData(struct listas_amigos* la) {
  * @param la Puntero a la estructura del servidor.
  * @return 0 si éxito, -1 si error
  */
-int saveFriendsData(struct listas_amigos* la) {
+int frd__saveFriendsData(struct ListasAmigos* la) {
 
 	printf("saveFriendsData()\n");
 
@@ -215,11 +327,11 @@ int saveFriendsData(struct listas_amigos* la) {
 		printf("listas_amigos.txt abierto correctamente.\n");
 
 	// Escribir los datos
-	int i, j, numAmigos, numUsuarios = la->nUsuarios;
+	int i, j, numAmigos, numUsuarios = la->size;
 	for (i = 0; i < numUsuarios; i++) {
 		// write user
 		fwrite(la->listas[i].usuario, strlen(la->listas[i].usuario), 1, fichero);
-		numAmigos = la->listas[i].nAmigos;
+		numAmigos = la->listas[i].size;
 		if (numAmigos > 0)
 			fputc(' ', fichero);
 
@@ -246,23 +358,23 @@ int saveFriendsData(struct listas_amigos* la) {
  * usuario, su lista de amigos.
  * @param la Puntero a la estructura del servidor.
  */
-void printFriendsData(struct listas_amigos* la) {
+void frd__printFriendsData(struct ListasAmigos* la) {
 
 	printf("======================\n");
 	printf(" * LISTAS DE AMIGOS * \n");
 	printf("======================\n");
 
-	if (la->nUsuarios == 0)
+	if (la->size == 0)
 		printf("\t < vacía > \n");
 	else {
 		int nUsr;
-		for (nUsr = 0; nUsr < la->nUsuarios; nUsr++) {
+		for (nUsr = 0; nUsr < la->size; nUsr++) {
 			printf(" * %s:\n", la->listas[nUsr].usuario);
-			if (la->listas[nUsr].nAmigos == 0)
+			if (la->listas[nUsr].size == 0)
 				printf("\t < vacía > \n");
 			else {
 				int nAmigos;
-				for (nAmigos = 0; nAmigos < la->listas[nUsr].nAmigos; nAmigos++)
+				for (nAmigos = 0; nAmigos < la->listas[nUsr].size; nAmigos++)
 					printf("\t- %s\n", la->listas[nUsr].amigos[nAmigos]);
 			}
 		}
@@ -271,160 +383,54 @@ void printFriendsData(struct listas_amigos* la) {
 }
 
 /**
- * Lee de fichero el contenido de la estructura del servidor que almacena
- * las peticiones de amistad pendientes.
- * @param ap Puntero a la estructura.
- * @return 0 si éxito, -1 si error
+ * Da de alta a un usuario en la lista de amigos (si acaba de registrarse)
+ * @param username Nombre de usuario a dar de alta
+ * @param la Puntero a la estructura de datos del servidor.
  */
-int loadPeticionesData(struct amistades_pendientes* ap) {
-
-	FILE *fichero;
-	char line[IMS_MAX_NAME_SIZE + 1];
-
-	// Abrir el fichero
-	fichero = fopen("peticiones_pendientes.txt", "rt");
-
-	if (fichero == NULL) {
-		printf("No se encuentra el fichero \"peticiones_pendientes.txt\"\n");
-		return -1;
-	} else
-		printf("peticiones_pendientes.txt abierto correctamente.\n");
-
-	// Leer los usuarios y sus amigos hasta fin de fichero
-	int nPeticiones = 0;
-	while (fgets(line, IMS_MAX_NAME_SIZE + 1, fichero) != NULL) {
-
-		// Set sender
-		line[strlen(line)-1] = '\0';	// quitamos el '\n' del fichero
-		strcpy(ap->amistades_pendientes[nPeticiones].emisor, line);
-
-		// Read and set receiver
-		fgets(line, IMS_MAX_NAME_SIZE + 1, fichero);
-		line[strlen(line)-1] = '\0';
-		strcpy(ap->amistades_pendientes[nPeticiones].destinatario, line);
-
-		nPeticiones++;
-	}
-	ap->nPeticiones = nPeticiones;
-
-	printPeticionesData(ap);
-
-	// Cerrar el fichero
-	if(fclose(fichero) != 0) {
-		printf("Error cerrando el fichero.\n");
-		return -1;
-	}
-
-	return 0;
+void frd__createFriendListEntry(struct ListasAmigos* la, char* username) {
+	la->listas[la->size].size = 0;
+	strcpy(la->listas[la->size].usuario, username);
+	la->size++;
 }
 
 /**
- * Guarda en fichero el contenido de la estructura del servidor que almacena
- * las peticiones de amistad pendientes.
- * @param ap Puntero a la estructura.
- * @return 0 si éxito, -1 si error
+ * Elimina un usuario del la lista de amistades.
+ * @param username Nombre del usuario a dar de baja.
+ * @param t Puntero a la estructura de datos.
+ * @return 0 si éxito, -1 si error si el usuario no existía.
  */
-int savePeticionesData(struct amistades_pendientes* ap) {
+int frd__deleteFriendListEntry(struct ListasAmigos* la, xsd__string username) {
 
-	// Abrir el fichero (sobrescribe)
-	FILE* fichero = fopen("peticiones_pendientes.txt", "wt");
+	// Buscar si existe un usuario con el mismo nombre
+	int pos = frd__findAmigosUsuario(la, username);
 
-	// Check errors while opening
-	if (fichero == NULL) {
-		printf("No se encuentra el fichero \"peticiones_pendientes.txt\"\n");
-		return -1;
-	} else
-		printf("peticones_pendientes.txt abierto correctamente.\n");
+	// Si no existía, salimos
+	if (pos < 0) return -1;
 
-	// Escribir los datos
-	int i;
-	for (i = 0; i < ap->nPeticiones; i++) {
-		// write sender
-		fwrite(ap->amistades_pendientes[i].emisor, strlen(ap->amistades_pendientes[i].emisor), 1, fichero);
-		fputc('\n', fichero);
+	// Eliminar el usuario de la estructura (i.e. desplazar el resto)
+	la->size--;
+	for (pos; pos < la->size; pos++)
+		frd__copyAmigosUsuario(&la->listas[pos], &la->listas[pos+1]);
 
-		// write receiver
-		fwrite(ap->amistades_pendientes[i].destinatario, strlen(ap->amistades_pendientes[i].destinatario), 1, fichero);
-		fputc('\n',fichero);
-	}
-
-	// Cerrar el fichero
-	if(fclose(fichero) != 0) {
-		printf("Error cerrando el fichero.\n");
-		return -1;
-	}
-
-	return 0;
-}
-/**
- * Imprime el contenido de la estructura del servidor que almacena las peticiones
- * de amistad pendientes.
- * @param ap Puntero a la estructura.
- */
-void printPeticionesData(struct amistades_pendientes* ap) {
-	printf("===================================\n");
-	printf(" Peticiones de amistad pendientes  \n");
-	printf("===================================\n");
-	if(ap->nPeticiones == 0)
-		printf("     < vacía >     \n");
-	else {
-		int i;
-		for (i = 0; i < ap->nPeticiones; i++) {
-			printf("-----------------------------------\n");
-			printf(" * emisor: %s\n", ap->amistades_pendientes[i].emisor);
-			printf(" * destinatario: %s\n", ap->amistades_pendientes[i].destinatario);
-
-		}
-	}
-	printf("-----------------------------------\n");
-}
-
-/**
- * Añade una nueva relación de amistad a la estructura que las almacena.
- * @param persona1 Primer componente de la relación de amistad.
- * @param persona2 Segundo componente de la relación de amistad.
- * @return 0 si éxito, -1 si error
- */
-int addFriendToList(struct listas_amigos* la, char* persona1, char* persona2) {
-
-	int i = 0, nAmigos, salir = 0;
-	while (i < la->nUsuarios && salir < 2) {
-		if(strcmp(persona1, la->listas[i].usuario) == 0 || strcmp(persona2, la->listas[i].usuario) == 0) {
-			// Añadir al final
-			nAmigos = la->listas[i].nAmigos;
-			if (nAmigos == IMS_MAX_AMIGOS)
-				return -1;
-
-			// Hay que comprobar en que usuario estamos para añadir al otro
-			if (strcmp(persona1, la->listas[i].usuario) == 0)
-				strcpy(la->listas[i].amigos[nAmigos], persona2);
-			else
-				strcpy(la->listas[i].amigos[nAmigos], persona1);
-
-			la->listas[i].nAmigos++;
-			salir++;
-		}
-		i++;
-	}
 	return 0;
 }
 
 /**
  * Devuelve la lista de amigos de un usuario.
- * @param username Nombre del usuario de quien buscamos los amigos.
  * @param la Puntero a la estructura del servidor con todas las listas de amigos.
+ * @param username Nombre del usuario de quien buscamos los amigos.
  * @param lista Parámetro de salida con la lista que nos piden.
  */
-int getFriendList(char* username, struct listas_amigos* la, char* lista) {
+int frd__getFriendList(struct ListasAmigos* la, char* username, char* lista) {
 
 	int i = 0, j, salir = 0;
 	// Buscamos el usuario que nos piden
-	while (i < la->nUsuarios && salir == 0) {
+	while (i < la->size && salir == 0) {
 		if (strcmp(username, la->listas[i].usuario) == 0) {
 			// Copiamos todos los amigos del usuario en la lista
-			for (j = 0; j < la->listas[i].nAmigos; j++) {
+			for (j = 0; j < la->listas[i].size; j++) {
 				strcat(lista, la->listas[i].amigos[j]);
-				if (j < la->listas[i].nAmigos - 1)
+				if (j < la->listas[i].size - 1)
 					strcat(lista, " ");
 			}
 			salir = 1;
@@ -435,32 +441,26 @@ int getFriendList(char* username, struct listas_amigos* la, char* lista) {
 }
 
 /**
- * Da de alta a un usuario en la lista de amigos (si acaba de registrarse)
- * @param username Nombre de usuario a dar de alta
- * @param la Puntero a la estructura de datos del servidor.
- */
-void createFriendListEntry(char* username, struct listas_amigos* la) {
-	la->listas[la->nUsuarios].nAmigos = 0;
-	strcpy(la->listas[la->nUsuarios].usuario, username);
-	la->nUsuarios++;
-}
-
-/**
  * Comprueba si 'destinatario' ya está en la lista de amigos de 'emisor'
  * @param pos Posición del emisor en la lista de amigos.
  * @param destinatario Receptor de la petición de amistad.
  * @return 0 si no está, 1 si ya existe, -1 error
  */
-int isFriendInList(struct listas_amigos* la, char* emisor, char* destinatario) {
+int frd__isFriendInList(struct ListasAmigos* la, char* emisor, char* destinatario) {
 
-	int pos = searchUserInFriendList(la, emisor);
+	printf("frd__isFriendInList()\n");
+
+	// Obtenemos el índice de la lista de amigos de 'emisor'
+	int pos = frd__findAmigosUsuario(la, emisor);
 	if (pos < 0)
 		return -1;
 
+	printf("%s tiene %d amigos.\n", emisor, la->listas[pos].size);
+
+	// Buscamos si 'destinatario' se encuentra dentro de dicha lista
 	int i = 0, existe = 0;
-	printf("%s tiene %d amigos.\n", emisor, la->listas[pos].nAmigos);
-	while (existe == 0 && i < la->listas[pos].nAmigos) {
-		if (strcmp(la->listas[pos].amigos[i], destinatario)) {// Encontramos el amigo
+	while (existe == 0 && i < la->listas[pos].size) {
+		if (strcmp(la->listas[pos].amigos[i], destinatario) == 0) {// Encontramos el amigo
 			existe = 1;
 			printf("%s es amigo de %s\n", emisor, destinatario);
 		}
@@ -472,16 +472,68 @@ int isFriendInList(struct listas_amigos* la, char* emisor, char* destinatario) {
 }
 
 /**
- * Busca el nombre de un usuario en la estructura del servidor.
- * @param t Puntero a la estructura
- * @param username Nombre del usuario a Buscar
- * @return -1 si no existe, la posición donde está si existe. v
+ * Añade una nueva relación de amistad a la estructura que las almacena.
+ * @param persona1 Primer componente de la relación de amistad.
+ * @param persona2 Segundo componente de la relación de amistad.
+ * @return 0 si éxito, -1 si error
  */
-int searchUserInFriendList(struct listas_amigos * la, xsd__string username) {
+int frd__addFriendRelationship(struct ListasAmigos* la, char* persona1, char* persona2) {
+
+	int i = 0, nAmigos, salir = 0;
+	while (i < la->size && salir < 2) {
+		if(strcmp(persona1, la->listas[i].usuario) == 0 || strcmp(persona2, la->listas[i].usuario) == 0) {
+			// Añadir al final
+			nAmigos = la->listas[i].size;
+			if (nAmigos == IMS_MAX_AMIGOS)
+				return -1;
+
+			// Hay que comprobar en que usuario estamos para añadir al otro
+			if (strcmp(persona1, la->listas[i].usuario) == 0)
+				strcpy(la->listas[i].amigos[nAmigos], persona2);
+			else
+				strcpy(la->listas[i].amigos[nAmigos], persona1);
+
+			la->listas[i].size++;
+			salir++;
+		}
+		i++;
+	}
+	return 0;
+}
+
+/**
+ * Borra a un usuario de las listas de amigos de todo el mundo.
+ * @param la Puntero a la estructura del servidor.
+ * @param username Nombre del usuario a eliminar.
+ */
+void frd__deleteUserFromEverybodyFriendList(struct ListasAmigos* la, xsd__string username) {
+	int i, j, k;
+	// Para cada usuario del sistema
+	for (i = 0; i < la->size; i++) {
+		// Para la lista de cada usuario, buscar al que Borramos
+		for (j = 0; j < la->listas[i].size; j++) {
+			if (strcmp(la->listas[i].amigos[j], username) == 0) {
+				// Borrar username y desplazar el resto de amigos
+				la->listas[i].size--;
+				for (k = j; k < la->listas[i].size; k++)
+					strcpy(la->listas[i].amigos[k], la->listas[i].amigos[k+1]);
+			}
+		}
+	}
+}
+
+/**
+ * Busca la lista de amigos de un usuario concreto dentro de la estructura del
+ * servidor.
+ * @param la Puntero a la estructura
+ * @param username Nombre del usuario a Buscar
+ * @return -1 si no existe, la posición donde está si existe.
+ */
+int frd__findAmigosUsuario(struct ListasAmigos* la, xsd__string username) {
 
 	int i = 0, pos = -1;
 
-	while (pos == -1 && i < la->nUsuarios) {
+	while (pos == -1 && i < la->size) {
 		if (strcmp(la->listas[i].usuario, username) == 0)
 			pos = i;
 		else
@@ -492,50 +544,15 @@ int searchUserInFriendList(struct listas_amigos * la, xsd__string username) {
 }
 
 /**
- * Elimina un usuario del la lista de amistades.
- * @param username Nombre del usuario a dar de baja.
- * @param t Puntero a la estructura de datos.
- * @return 0 si éxito, -1 si error si el usuario no existía.
+ * Copia la estructura AmigosUsuario src en la dest.
+ * @param dest Puntero a la estructura destino.
+ * @param src Puntero a la estructura origen.
  */
-int deleteFriendListEntry(struct listas_amigos * la, xsd__string username) {
-
-	// Buscar si existe un usuario con el mismo nombre
-	int pos = searchUserInFriendList(la, username);
-
-	// Si no existía, salimos
-	if (pos < 0) return -1;
-
-	// Eliminar el usuario de la estructura (i.e. desplazar el resto)
-	la->nUsuarios--;
-	for (pos; pos < la->nUsuarios; pos++) {
-		strcpy(la->listas[pos].usuario, la->listas[pos+1].usuario); // destino, origen
-		copy(&la->listas[pos], &la->listas[pos+1]);
-	}
-
-	return 0;
-}
-
-void copy(struct amigos_usuario* dest, struct amigos_usuario* src) {
-	dest->nAmigos = src->nAmigos;
+void frd__copyAmigosUsuario (struct AmigosUsuario* dest, struct AmigosUsuario* src) {
+	dest->size = src->size;
 	strcpy(dest->usuario, src->usuario);
 	int i;
-	for (i = 0; i < src->nAmigos; i++) {
+	for (i = 0; i < src->size; i++) {
 		strcpy(dest->amigos[i], src->amigos[i]);
-	}
-}
-
-void deleteUserFromEverybodyFriendList(struct listas_amigos* la, xsd__string username) {
-	int i, j, k;
-	// Para cada usuario del sistema
-	for (i = 0; i < la->nUsuarios; i++) {
-		// Para la lista de cada usuario, buscar al que Borramos
-		for (j = 0; j < la->listas[i].nAmigos; j++) {
-			if (strcmp(la->listas[i].amigos[j], username) == 0) {
-				// Borrar username y desplazar el resto de amigos
-				la->listas[i].nAmigos--;
-				for (k = j; k < la->listas[i].nAmigos; k++)
-					strcpy(la->listas[i].amigos[k], la->listas[i].amigos[k+1]);
-			}
-		}
 	}
 }

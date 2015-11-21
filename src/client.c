@@ -303,7 +303,7 @@ void enviarMensaje() {
  */
 void sendFriendRequest() {
 
-	struct PeticionAmistad pet;
+	struct IMS_PeticionAmistad pet;
 	char receptor[IMS_MAX_NAME_SIZE];
 	struct ResultMsg res;
 
@@ -352,10 +352,10 @@ void receiveFriendRequests() {
 	}
 
 	// 3. Interpretar los resultados
-	if (lista_peticiones.nElems == 0)
+	if (lista_peticiones.size == 0)
 		printf("No tienes ninguna petición de amistad pendiente.\n");
 	else {
-		printf("Tienes %d peticiones de amistad pendientes:\n", lista_peticiones.nElems);
+		printf("Tienes %d peticiones de amistad pendientes:\n", lista_peticiones.size);
 		printf("------------------------------------------\n");
 	  	char* palabra = strtok (lista_peticiones.peticiones," ");
 		int i = 0;
@@ -368,7 +368,7 @@ void receiveFriendRequests() {
 		printf("------------------------------------------\n");
 
 		char c;
-		for (i = 0; i < lista_peticiones.nElems; i++) {
+		for (i = 0; i < lista_peticiones.size; i++) {
 
 			// Preguntamos si acepta o declina cada una de las peticiones
 			printf("¿Quieres aceptar la petición de amistad de %s? (s/n)\n", aux[i]);
