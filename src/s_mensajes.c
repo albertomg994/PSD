@@ -13,6 +13,8 @@ void s_mensajes()
 
 int sendMessage (struct Message2 myMessage){
    FILE * fichero;
+   FILE * fichMsgEnviados;
+
    //chdir("Server");
 	chdir(myMessage.receptor);
 
@@ -38,6 +40,7 @@ int sendMessage (struct Message2 myMessage){
 	printf("Fichero cerrado.\n");
 	chdir("..");
    //chdir("..");
+
    return 0;
 }
 int receiveMessage(char* username, struct ListaMensajes* result){

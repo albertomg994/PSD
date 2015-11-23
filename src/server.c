@@ -19,6 +19,8 @@ struct ListaUsuarios lu;
 struct ListaAmistadesPend ap;
 struct ListasAmigos la;
 
+struct ListasMensajes lmsg;
+
 /* Flag para activar el guardado. */
 volatile sig_atomic_t save_data = 0;
 
@@ -55,6 +57,7 @@ int main(int argc, char **argv){
 
 	// Cargamos las peticiones de amistad pendientes
 	if (frq__loadPeticiones(&ap) == -1) exit(-1);
+
 
 	// Bind to the specified port. Devuelve el socket primario del servidor.
 	m = soap_bind(&soap, NULL, atoi(argv[1]), 100);
@@ -157,17 +160,35 @@ int main(int argc, char **argv){
 }
 
 int ims__sendMessage (struct soap *soap, struct Message2 myMessage, int *result) {
-	printf("Received by server:\n");
-	printf("\temisor: %s\n", myMessage.emisor);
-	printf("\treceptor: %s\n", myMessage.receptor);
-	printf("\ttexto: %s\n", myMessage.msg);
 
-	*result = sendMessage (myMessage);
+	int i = 0, j, salir = 0;
+	// Comprobar si el emisor es el amigo del reseptor.
+	while (i < la.size && salir == 0) {
+		if (strcmp(myMessage.emisor, la.listas[i].usuario) == 0) {
+			for (j = 0; j < la.listas[i].size; j++) {
+				if(strcmp(myMessage.receptor,la.listas[i].amigos[j]) == 0)
+					salir = 1;
+			}
+		}
+		i++;
+	}
+
+	if(salir == 1){
+
+		printf("-----Server: es tu amigo.\n");
+		*result = sendMessage (myMessage);
+
+	}else{
+		printf("-----Server: no es tu amigo el mensaje ignorado.\n");
+		*result = -1;
+	}
+
 
 	return SOAP_OK;
 }
 
 int ims__receiveMessage (struct soap* soap, char* username, struct ListaMensajes* result){
+
 
 	int error= receiveMessage(username,result);
 	if(error!=0){
@@ -285,7 +306,7 @@ int ims__logout (struct soap *soap, char* username, int *result) {
 int ims__sendFriendRequest (struct soap *soap, struct IMS_PeticionAmistad p, struct ResultMsg *result) {
 
 	printf("ims__sendFriendRequest()\n");
-	
+
 	result->msg = malloc(IMS_MAX_MSG_SIZE);
 
 	result->code = frq__addFriendRequest(&ap, &lu, &la, p.emisor, p.receptor);

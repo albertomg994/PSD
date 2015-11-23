@@ -166,7 +166,6 @@ int usr__addUsuario(struct ListaUsuarios* lu, xsd__string username) {
 		printf("Error cerrando el fichero \"usuarios.txt\".\n");
 		return -1;
 	}
-
 	chdir("..");
 	printf("Sea ha creado la carpeta %s\n",username);
 	//chdir("..");

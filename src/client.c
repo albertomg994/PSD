@@ -13,7 +13,6 @@ struct MisAmigos {
 	int nElems;
 	char amigos[IMS_MAX_AMIGOS][IMS_MAX_NAME_SIZE];
 };
-
 // -----------------------------------------------------------------------------
 // Variables globales
 // -----------------------------------------------------------------------------
@@ -190,12 +189,12 @@ void menuAvanzado() {
 
 	do {
 		printf("1.- Enviar mensaje a otro usuario\n");
-		printf("2.- Enviar petición de amistad\n");
-		printf("3.- Consultar peticiones de amistad\n");
-		printf("4.- Ver amigos\n");
-		printf("5.- Dar de baja\n");
-		printf("6.- Cerrar sesión\n");
-		printf("7.- Consultar mensajes\n");
+		printf("2.- Consultar mensajes\n");
+		printf("3.- Enviar petición de amistad\n");
+		printf("4.- Consultar peticiones de amistad\n");
+		printf("5.- Ver amigos\n");
+		printf("6.- Dar de baja\n");
+		printf("7.- Cerrar sesión\n");
 
 		opcion = getchar();
 		clean_stdin();
@@ -205,27 +204,27 @@ void menuAvanzado() {
 				enviarMensaje();
 				break;
 			case '2':
+	         recibirMensaje();
+	         break;
+			case '3':
 				sendFriendRequest();
 				break;
-			case '3':
+			case '4':
 				receiveFriendRequests();
 				break;
-			case '4':
+			case '5':
 				showFriends();
 				break;
-			case '5':
+			case '6':
 				darBaja();
 				break;
-			case '6':
+			case '7':
 				cerrarSesion();
 				break;
-         case '7':
-            recibirMensaje();
-            break;
 			default:
 				break;
 		}
-	} while (opcion != '5'  && opcion != '6');
+	} while (opcion != '6'  && opcion != '7');
 }
 
 /**
@@ -260,14 +259,14 @@ void enviarMensaje() {
 	char text[IMS_MAX_MSG_SIZE];
 	char receptor[IMS_MAX_NAME_SIZE];
 	int res,i,find=0;
-
 	getFriendList(); // Obtener la última versión.
 
 	// 1. Poner el mensaje
 	printf("Introduce el texto:");
-	scanf("%255s", text);
+	/*Para que lo lea con los espacios.*/
+	fgets (text,255,stdin);
 	text[strlen(text)] = '\0';
-	clean_stdin();
+	//clean_stdin();
 	mensaje.msg = malloc (IMS_MAX_MSG_SIZE);
 	strcpy (mensaje.msg, text);
 
@@ -287,6 +286,8 @@ void enviarMensaje() {
 		if( strcmp( mis_amigos.amigos[i],mensaje.receptor) == 0)
 			find=1;
 	}
+	//para comprobar si en el servidor funciona la comprobación
+	//find=1;
 	if(!find){
 		printf("	ERROR: El receptor no es tu amigo. =( \n");
 	}else{
@@ -297,6 +298,9 @@ void enviarMensaje() {
 			soap_print_fault(&soap, stderr);
 			exit(1);
 		}
+	}
+	if(res != 0){
+		printf("ERROR: el mensaje no se ha enviado.\n");
 	}
 }
 
