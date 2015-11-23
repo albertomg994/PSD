@@ -4,6 +4,16 @@
 // -----------------------------------------------------------------------------
 // Tipos, constantes y estructuras
 // -----------------------------------------------------------------------------
+struct Mensaje {
+   char emisor [IMS_MAX_NAME_SIZE];
+   char receptor [IMS_MAX_NAME_SIZE];
+   char msg [IMS_MAX_MSG_SIZE];
+};
+
+struct ListasMensajes{
+   int size;
+   struct Mensaje lista [MAX_MENSAJES];
+};
 // -----------------------------------------------------------------------------
 // Cabeceras de funciones
 // -----------------------------------------------------------------------------

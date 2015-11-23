@@ -32,6 +32,7 @@ void cerrarSesion();
 // Mensajes
 void enviarMensaje();
 void recibirMensaje();
+void consultarEntrega();
 // Gestión de amistades
 void sendFriendRequest();
 void receiveFriendRequests();
@@ -195,6 +196,7 @@ void menuAvanzado() {
 		printf("5.- Ver amigos\n");
 		printf("6.- Dar de baja\n");
 		printf("7.- Cerrar sesión\n");
+		printf("8.- Consultar la entrega\n");
 
 		opcion = getchar();
 		clean_stdin();
@@ -220,6 +222,9 @@ void menuAvanzado() {
 				break;
 			case '7':
 				cerrarSesion();
+				break;
+			case '8':
+				consultarEntrega();
 				break;
 			default:
 				break;
@@ -478,4 +483,20 @@ void recibirMensaje(){
 		exit(1);
 	}
 
+}
+
+void consultarEntrega(){
+	struct ListaMensajes listaMensajes;
+	// Allocate space for the message field of the myMessage struct then copy it
+	listaMensajes.mensajes = malloc( (IMS_MAX_NAME_SIZE+IMS_MAX_MSG_SIZE)*MAX_MENSAJES);
+	// Llamada gSOAP
+   soap_call_ims__consultarEntrega(&soap, serverURL, "", username_global, &listaMensajes);
+	printf("--------------------------\n");
+	printf("%s",listaMensajes.mensajes);
+	printf("--------------------------\n");
+   // Comprobar errores
+	if (soap.error) {
+		soap_print_fault(&soap, stderr);
+		exit(1);
+	}
 }

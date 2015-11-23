@@ -13,7 +13,6 @@ void s_mensajes()
 
 int sendMessage (struct Message2 myMessage){
    FILE * fichero;
-   FILE * fichMsgEnviados;
 
    //chdir("Server");
 	chdir(myMessage.receptor);
@@ -28,7 +27,6 @@ int sendMessage (struct Message2 myMessage){
 	fwrite(myMessage.emisor, strlen(myMessage.emisor), 1, fichero);
 	fputc(' ',fichero);
 	fwrite(myMessage.msg, strlen(myMessage.msg), 1, fichero);
-	fputc('\n',fichero);
 
 	printf("Escribimos en el fichero.\n");
 

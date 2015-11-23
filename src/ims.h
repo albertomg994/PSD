@@ -73,7 +73,9 @@ int ims__sendMessage (struct Message2 myMessage, int *result);
 
 // Recibir un mensaje de prueba
 int ims__receiveMessage (char* username, struct ListaMensajes* result);
-//int ims__receiveMessage (struct Message *myMessage);
+
+//Confirmar mensaje
+int ims__consultarEntrega(char* username, struct ListaMensajes* result);
 
 // Alta en el sistema
 int ims__darAlta (char* username, struct ResultMsg *result);

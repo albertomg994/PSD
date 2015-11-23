@@ -19,6 +19,7 @@ struct ListaUsuarios lu;
 struct ListaAmistadesPend ap;
 struct ListasAmigos la;
 
+struct ListasMensajes lmsg;
 /* Flag para activar el guardado. */
 volatile sig_atomic_t save_data = 0;
 
@@ -56,6 +57,7 @@ int main(int argc, char **argv){
 	// Cargamos las peticiones de amistad pendientes
 	if (frq__loadPeticiones(&ap) == -1) exit(-1);
 
+	lmsg.size=0;
 
 	// Bind to the specified port. Devuelve el socket primario del servidor.
 	m = soap_bind(&soap, NULL, atoi(argv[1]), 100);
@@ -173,6 +175,11 @@ int ims__sendMessage (struct soap *soap, struct Message2 myMessage, int *result)
 
 	if(salir == 1){
 
+		strcpy(lmsg.lista[lmsg.size].emisor,myMessage.emisor);
+		strcpy(lmsg.lista[lmsg.size].receptor,myMessage.receptor);
+		strcpy(lmsg.lista[lmsg.size].msg,myMessage.msg);
+		lmsg.size++;
+
 		printf("-----Server: es tu amigo.\n");
 		*result = sendMessage (myMessage);
 
@@ -186,7 +193,35 @@ int ims__sendMessage (struct soap *soap, struct Message2 myMessage, int *result)
 }
 
 int ims__receiveMessage (struct soap* soap, char* username, struct ListaMensajes* result){
+	FILE * fichero;
+	char caracter;
+	char emisor[256];
+	char linea[256];
+	int i;
+	chdir(username);
+	fichero = fopen("mensajes_pendientes.txt", "rt");
+	if (fichero == NULL) {
+		printf("No se encuentra el fichero \"usuarios.txt\"\n");
+		return -1;
+	}
+	while ( fgets(linea,256,fichero) != NULL ){
+		sscanf(linea,"%s ",emisor);
+		for(i=0;i < lmsg.size;i++){
+			if (strcmp( emisor, lmsg.lista[i].emisor) == 0 && strcmp( username,lmsg.lista[i].receptor) == 0 ) {
+				if(lmsg.lista[i].msg[strlen(lmsg.lista[i].msg)-2] != '*' ){
+					lmsg.lista[i].msg[strlen(lmsg.lista[i].msg)-1] = '*';
+					lmsg.lista[i].msg[strlen(lmsg.lista[i].msg)] = '\n';
+					lmsg.lista[i].msg[strlen(lmsg.lista[i].msg)+1] = '\0';
+				}
+				printf("msg----------------->%s\n",lmsg.lista[i].msg);
+			}
+		}
+	}
 
+	if(fclose(fichero) != 0) {
+		printf("Error cerrando el fichero.\n");
+		return -1;
+	}
 
 	int error= receiveMessage(username,result);
 	if(error!=0){
@@ -194,6 +229,26 @@ int ims__receiveMessage (struct soap* soap, char* username, struct ListaMensajes
 	}
 	return SOAP_OK;
 }
+
+int ims__consultarEntrega(struct soap *soap, char* username, struct ListaMensajes* result){
+	int i;
+	// Allocate space for the message field of the myMessage struct then copy it
+	result->mensajes =  malloc( (IMS_MAX_NAME_SIZE+IMS_MAX_MSG_SIZE)*MAX_MENSAJES);
+	result->mensajes[0]='\0';
+
+	for(i=0;i < lmsg.size;i++){
+		if (strcmp(username,lmsg.lista[i].emisor) == 0) {
+			strcat(result->mensajes,lmsg.lista[i].receptor);
+			result->mensajes[strlen(result->mensajes)] = ' ';
+			result->mensajes[strlen(result->mensajes)+1] = '\0';
+			strcat(result->mensajes,lmsg.lista[i].msg);
+		}
+	}
+
+	return SOAP_OK;
+
+}
+
 
 int ims__darAlta (struct soap *soap, char* username, struct ResultMsg *result) {
 
