@@ -19,8 +19,6 @@ struct ListaUsuarios lu;
 struct ListaAmistadesPend ap;
 struct ListasAmigos la;
 
-struct ListasMensajes lmsg;
-
 /* Flag para activar el guardado. */
 volatile sig_atomic_t save_data = 0;
 
