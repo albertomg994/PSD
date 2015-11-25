@@ -14,13 +14,13 @@ int frq__loadPeticiones(struct ListaAmistadesPend* ap) {
 	char line[IMS_MAX_NAME_SIZE + 1];
 
 	// Abrir el fichero
-	fichero = fopen("peticiones_pendientes.txt", "rt");
+	fichero = fopen("Server/peticiones_pendientes.txt", "rt");
 
 	if (fichero == NULL) {
-		printf("No se encuentra el fichero \"peticiones_pendientes.txt\"\n");
+		printf("No se encuentra el fichero \"Server/peticiones_pendientes.txt\"\n");
 		return -1;
 	} else
-		printf("peticiones_pendientes.txt abierto correctamente.\n");
+		printf("Server/peticiones_pendientes.txt abierto correctamente.\n");
 
 	// Leer los usuarios y sus amigos hasta fin de fichero
 	int nPeticiones = 0;
@@ -59,7 +59,7 @@ int frq__loadPeticiones(struct ListaAmistadesPend* ap) {
 int frq__savePeticiones(struct ListaAmistadesPend* ap) {
 
 	// Abrir el fichero (sobrescribe)
-	FILE* fichero = fopen("peticiones_pendientes.txt", "wt");
+	FILE* fichero = fopen("Server/peticiones_pendientes.txt", "wt");
 
 	// Check errors while opening
 	if (fichero == NULL) {
@@ -265,13 +265,13 @@ int frd__loadFriendsData(struct ListasAmigos* la) {
 	char line[IMS_MAX_NAME_SIZE*MAX_USERS + 1];
 
 	// Abrir el fichero
-	fichero = fopen("listas_amigos.txt", "rt");
+	fichero = fopen("Server/listas_amigos.txt", "rt");
 
 	if (fichero == NULL) {
-		printf("No se encuentra el fichero \"listas_amigos.txt\"\n");
+		printf("No se encuentra el fichero \"Server/listas_amigos.txt\"\n");
 		return -1;
 	} else
-		printf("listas_amigos.txt abierto correctamente.\n");
+		printf("Server/listas_amigos.txt abierto correctamente.\n");
 
 	// Leer los usuarios y sus amigos hasta fin de fichero
 	int nUsr = 0;
@@ -318,13 +318,13 @@ int frd__saveFriendsData(struct ListasAmigos* la) {
 	printf("saveFriendsData()\n");
 
 	// Abrir el fichero (sobrescribe)
-	FILE* fichero = fopen("listas_amigos.txt", "wt");
+	FILE* fichero = fopen("Server/listas_amigos.txt", "wt");
 
 	if (fichero == NULL) {
-		printf("No se encuentra el fichero \"listas_amigos.txt\"\n");
+		printf("No se encuentra el fichero \"Server/listas_amigos.txt\"\n");
 		return -1;
 	} else
-		printf("listas_amigos.txt abierto correctamente.\n");
+		printf("Server/listas_amigos.txt abierto correctamente.\n");
 
 	// Escribir los datos
 	int i, j, numAmigos, numUsuarios = la->size;

@@ -6,20 +6,112 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdlib.h>
+
 void s_mensajes()
 {
     printf("Se ha ejecutado la función s_mensajes!");
 }
 
+int msg__loadMensajesEnviados(struct ListasMensajes* lmsg){
+
+   FILE *fichero;
+	char emisor[IMS_MAX_NAME_SIZE];
+   char receptor[IMS_MAX_NAME_SIZE];
+   char msg[IMS_MAX_MSG_SIZE];
+	int nMsg = 0;
+
+	// Abrir el fichero
+	fichero = fopen("Server/mensajes_enviados.txt", "rt");
+
+	if (fichero == NULL) {
+		printf("No se encuentra el fichero \"Server/mensajes_enviados.txt\"\n");
+		return -1;
+	} else
+		printf("Fichero \"Server/mensajes_enviados.txt\" abierto correctamente.\n");
+
+	// Leer los usuarios hasta fin de fichero
+	char c = fgetc(fichero);
+	while (c != EOF) {
+		// Read till space
+		appendChar(lmsg->lista[nMsg].emisor, c);
+      // leer a emisor
+		c = fgetc(fichero);
+		while (c != ' ') {
+			appendChar(lmsg->lista[nMsg].emisor, c);
+			c = fgetc(fichero);
+		}
+      // leer a receptor
+      c = fgetc(fichero);
+      while (c != ' ') {
+			appendChar(lmsg->lista[nMsg].receptor, c);
+			c = fgetc(fichero);
+		}
+
+      // leer a mensaje
+      c = fgetc(fichero);
+      while (c != '\n') {
+			appendChar(lmsg->lista[nMsg].msg, c);
+			c = fgetc(fichero);
+		}
+      //Concateno el '\n'
+      appendChar(lmsg->lista[nMsg].msg, '\n');
+		nMsg++;
+		// Read next msg (or EOF)
+		c = fgetc(fichero);
+	}
+
+	lmsg->size = nMsg;
+
+	// Cerrar el fichero
+	if(fclose(fichero) != 0) {
+		printf("Error cerrando el fichero \"Server/mensajes_enviados.txt\".\n");
+		return -1;
+	}
+
+   return 0;
+}
+
+int msg__saveMensajesEnviados(struct ListasMensajes* lmsg){
+   FILE *fichero;
+	char line[IMS_MAX_NAME_SIZE];
+	int nUsr = 0;
+
+	// Abrir el fichero
+	fichero = fopen("Server/mensajes_enviados.txt", "wt");
+
+	if (fichero == NULL) {
+		printf("No se encuentra el fichero \"Server/mensajes_enviados.txt\"\n");
+		return -1;
+	} else
+		printf("Fichero \"Server/mensajes_enviados.txt\" abierto correctamente.\n");
+      // Escribir los datos
+   int i;
+   for (i = 0; i < lmsg->size; i++) {
+   	fwrite(lmsg->lista[i].emisor, strlen(lmsg->lista[i].emisor), 1, fichero);
+   	fputc(' ', fichero);
+      fwrite(lmsg->lista[i].receptor, strlen(lmsg->lista[i].receptor), 1, fichero);
+      fputc(' ', fichero);
+      fwrite(lmsg->lista[i].msg, strlen(lmsg->lista[i].msg), 1, fichero);
+   }
+
+   	// Cerrar el fichero
+   if(fclose(fichero) != 0) {
+   	printf("Error cerrando el fichero \"Server/mensajes_enviados.txt\".\n");
+   	return -1;
+   }
+
+   return 0;
+}
+
 int sendMessage (struct Message2 myMessage){
    FILE * fichero;
 
-   //chdir("Server");
+   chdir("Server");
 	chdir(myMessage.receptor);
 
 	fichero = fopen("mensajes_pendientes.txt", "a");
 	if (fichero == NULL) {
-		printf("No se encuentra el fichero \"usuarios.txt\"\n");
+		printf("No se encuentra el fichero \"mensajes_pendientes.txt.txt\"\n");
 		return -1;
 	} else
 		printf("Fichero abierto correctamente.\n");
@@ -28,19 +120,20 @@ int sendMessage (struct Message2 myMessage){
 	fputc(' ',fichero);
 	fwrite(myMessage.msg, strlen(myMessage.msg), 1, fichero);
 
-	printf("Escribimos en el fichero.\n");
+	printf("Escribimos en el fichero \"mensajes_pendientes.txt.txt\".\n");
 
 	// Cerrar el fichero
 	if(fclose(fichero) != 0) {
-		printf("Error cerrando el fichero.\n");
+      printf("Error cerrando el fichero \"mensajes_pendientes.txt\".\n");
 		return -1;
 	}
 	printf("Fichero cerrado.\n");
 	chdir("..");
-   //chdir("..");
+   chdir("..");
 
    return 0;
 }
+
 int receiveMessage(char* username, struct ListaMensajes* result){
 
    int i=0;
@@ -48,11 +141,11 @@ int receiveMessage(char* username, struct ListaMensajes* result){
 	result->mensajes =  malloc( (IMS_MAX_NAME_SIZE+IMS_MAX_MSG_SIZE)*MAX_MENSAJES);
 	FILE * fichero;
 	char caracter;
-   //chdir("Server");
+   chdir("Server");
 	chdir(username);
 	fichero = fopen("mensajes_pendientes.txt", "rt");
 	if (fichero == NULL) {
-		printf("No se encuentra el fichero \"usuarios.txt\"\n");
+		printf("No se encuentra el fichero \"mensajes_pendientes.txt\"\n");
 		return -1;
 	}
 	caracter = fgetc(fichero);
@@ -64,16 +157,78 @@ int receiveMessage(char* username, struct ListaMensajes* result){
 	result->mensajes[i]='\0';
 
 	if(fclose(fichero) != 0) {
-		printf("Error cerrando el fichero.\n");
+		printf("Error cerrando el fichero \"mensajes_pendientes.txt.txt\".\n");
 		return -1;
 	}
    /*BORRAR EL CONTENIDO del FICHERO*/
    fichero = fopen("mensajes_pendientes.txt", "wt");
    if(fclose(fichero) != 0) {
-      printf("Error cerrando el fichero.\n");
+      printf("Error cerrando el fichero \"mensajes_pendientes.txt\".\n");
       return -1;
    }
    chdir("..");
-   //chdir("..");
+   chdir("..");
    return 0 ;
+}
+
+int checkMessage(char* username,struct ListasMensajes* lmsg){
+
+   FILE * fichero;
+	char caracter;
+	char emisor[256];
+	char linea[256];
+	int i;
+   chdir("Server");
+	chdir(username);
+	fichero = fopen("mensajes_pendientes.txt", "rt");
+	if (fichero == NULL) {
+		printf("No se encuentra el fichero \"mensajes_pendientes.txt\"\n");
+		return -1;
+	}
+	while ( fgets(linea,256,fichero) != NULL ){
+		sscanf(linea,"%s ",emisor);
+		for(i=0;i < lmsg->size;i++){
+			if (strcmp( emisor, lmsg->lista[i].emisor) == 0 && strcmp( username,lmsg->lista[i].receptor) == 0 ) {
+				if(lmsg->lista[i].msg[strlen(lmsg->lista[i].msg)-2] != '*' ){
+					lmsg->lista[i].msg[strlen(lmsg->lista[i].msg)-1] = '*';
+					lmsg->lista[i].msg[strlen(lmsg->lista[i].msg)] = '\n';
+					lmsg->lista[i].msg[strlen(lmsg->lista[i].msg)+1] = '\0';
+				}
+				printf("msg----------------->%s\n",lmsg->lista[i].msg);
+			}
+		}
+	}
+
+	if(fclose(fichero) != 0) {
+		printf("Error cerrando el fichero \"mensajes_pendientes.txt\".\n");
+		return -1;
+	}
+   chdir("..");
+   chdir("..");
+   return 0;
+}
+
+int consultEntrega(char* username,struct ListasMensajes* lmsg,struct ListaMensajes* result){
+   int i;
+	// Allocate space for the message field of the myMessage struct then copy it
+	result->mensajes =  malloc( (IMS_MAX_NAME_SIZE+IMS_MAX_MSG_SIZE)*MAX_MENSAJES);
+	result->mensajes[0]='\0';
+
+	for(i=0;i < lmsg->size;i++){
+		if (strcmp(username,lmsg->lista[i].emisor) == 0) {
+			strcat(result->mensajes,lmsg->lista[i].receptor);
+			result->mensajes[strlen(result->mensajes)] = ' ';
+			result->mensajes[strlen(result->mensajes)+1] = '\0';
+			strcat(result->mensajes,lmsg->lista[i].msg);
+		}
+	}
+   return 0;
+}
+int sendCheck(struct ListasMensajes* lmsg,struct Message2* myMessage){
+   //Meter el mensaje en la Estructora para el chequeo.
+   strcpy(lmsg->lista[lmsg->size].emisor,myMessage->emisor);
+   strcpy(lmsg->lista[lmsg->size].receptor,myMessage->receptor);
+   strcpy(lmsg->lista[lmsg->size].msg,myMessage->msg);
+   lmsg->size++;
+   return 0;
 }

@@ -46,7 +46,6 @@ void menuAvanzado();
 // -----------------------------------------------------------------------------
 int main(int argc, char **argv) {
 
-  	struct Message myMsgB;
 	char* port;
 
 	// Usage
@@ -191,12 +190,12 @@ void menuAvanzado() {
 	do {
 		printf("1.- Enviar mensaje a otro usuario\n");
 		printf("2.- Consultar mensajes\n");
-		printf("3.- Enviar petición de amistad\n");
-		printf("4.- Consultar peticiones de amistad\n");
-		printf("5.- Ver amigos\n");
-		printf("6.- Dar de baja\n");
-		printf("7.- Cerrar sesión\n");
-		printf("8.- Consultar la entrega\n");
+		printf("3.- Consultar la entrega\n");
+		printf("4.- Enviar petición de amistad\n");
+		printf("5.- Consultar peticiones de amistad\n");
+		printf("6.- Ver amigos\n");
+		printf("7.- Dar de baja\n");
+		printf("8.- Cerrar sesión\n");
 
 		opcion = getchar();
 		clean_stdin();
@@ -209,27 +208,27 @@ void menuAvanzado() {
 	         recibirMensaje();
 	         break;
 			case '3':
-				sendFriendRequest();
+				consultarEntrega();
 				break;
 			case '4':
-				receiveFriendRequests();
+				sendFriendRequest();
 				break;
 			case '5':
-				showFriends();
+				receiveFriendRequests();
 				break;
 			case '6':
-				darBaja();
+				showFriends();
 				break;
 			case '7':
-				cerrarSesion();
+				darBaja();
 				break;
 			case '8':
-				consultarEntrega();
+				cerrarSesion();
 				break;
 			default:
 				break;
 		}
-	} while (opcion != '6'  && opcion != '7');
+	} while (opcion != '7'  && opcion != '8');
 }
 
 /**

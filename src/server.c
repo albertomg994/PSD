@@ -57,7 +57,9 @@ int main(int argc, char **argv){
 	// Cargamos las peticiones de amistad pendientes
 	if (frq__loadPeticiones(&ap) == -1) exit(-1);
 
-	lmsg.size=0;
+	// Cargamos los mensjaes no chequeados
+	if (msg__loadMensajesEnviados(&lmsg) == -1) exit(-1);
+
 
 	// Bind to the specified port. Devuelve el socket primario del servidor.
 	m = soap_bind(&soap, NULL, atoi(argv[1]), 100);
@@ -111,6 +113,7 @@ int main(int argc, char **argv){
 			usr__saveListaUsuarios(&lu);
 			frd__saveFriendsData(&la);
 			frq__savePeticiones(&ap);
+			msg__saveMensajesEnviados(&lmsg);
 			exit(0);
 		}
 	}
@@ -142,6 +145,7 @@ int main(int argc, char **argv){
 		usr__saveListaUsuarios(&lu);
 		frd__saveFriendsData(&la);
 		frq__savePeticiones(&ap);
+		msg__saveMensajesEnviados(&lmsg);
 
 		// Depurar la captura de CTRL+C
 		if(DEBUG_SIGINT) {
@@ -174,12 +178,7 @@ int ims__sendMessage (struct soap *soap, struct Message2 myMessage, int *result)
 	}
 
 	if(salir == 1){
-
-		strcpy(lmsg.lista[lmsg.size].emisor,myMessage.emisor);
-		strcpy(lmsg.lista[lmsg.size].receptor,myMessage.receptor);
-		strcpy(lmsg.lista[lmsg.size].msg,myMessage.msg);
-		lmsg.size++;
-
+		sendCheck(&lmsg,&myMessage);
 		printf("-----Server: es tu amigo.\n");
 		*result = sendMessage (myMessage);
 
@@ -193,37 +192,13 @@ int ims__sendMessage (struct soap *soap, struct Message2 myMessage, int *result)
 }
 
 int ims__receiveMessage (struct soap* soap, char* username, struct ListaMensajes* result){
-	FILE * fichero;
-	char caracter;
-	char emisor[256];
-	char linea[256];
-	int i;
-	chdir(username);
-	fichero = fopen("mensajes_pendientes.txt", "rt");
-	if (fichero == NULL) {
-		printf("No se encuentra el fichero \"usuarios.txt\"\n");
-		return -1;
-	}
-	while ( fgets(linea,256,fichero) != NULL ){
-		sscanf(linea,"%s ",emisor);
-		for(i=0;i < lmsg.size;i++){
-			if (strcmp( emisor, lmsg.lista[i].emisor) == 0 && strcmp( username,lmsg.lista[i].receptor) == 0 ) {
-				if(lmsg.lista[i].msg[strlen(lmsg.lista[i].msg)-2] != '*' ){
-					lmsg.lista[i].msg[strlen(lmsg.lista[i].msg)-1] = '*';
-					lmsg.lista[i].msg[strlen(lmsg.lista[i].msg)] = '\n';
-					lmsg.lista[i].msg[strlen(lmsg.lista[i].msg)+1] = '\0';
-				}
-				printf("msg----------------->%s\n",lmsg.lista[i].msg);
-			}
-		}
-	}
+	int error;
 
-	if(fclose(fichero) != 0) {
-		printf("Error cerrando el fichero.\n");
-		return -1;
+	error=checkMessage(username,&lmsg);
+	if(error!=0){
+		printf("ERROR: al chequearMensajesª\n");
 	}
-
-	int error= receiveMessage(username,result);
+	error= receiveMessage(username,result);
 	if(error!=0){
 		printf("ERROR: al recibirMensajesª\n");
 	}
@@ -231,18 +206,11 @@ int ims__receiveMessage (struct soap* soap, char* username, struct ListaMensajes
 }
 
 int ims__consultarEntrega(struct soap *soap, char* username, struct ListaMensajes* result){
-	int i;
-	// Allocate space for the message field of the myMessage struct then copy it
-	result->mensajes =  malloc( (IMS_MAX_NAME_SIZE+IMS_MAX_MSG_SIZE)*MAX_MENSAJES);
-	result->mensajes[0]='\0';
+	int error;
+	error=consultEntrega(username,&lmsg,result);
 
-	for(i=0;i < lmsg.size;i++){
-		if (strcmp(username,lmsg.lista[i].emisor) == 0) {
-			strcat(result->mensajes,lmsg.lista[i].receptor);
-			result->mensajes[strlen(result->mensajes)] = ' ';
-			result->mensajes[strlen(result->mensajes)+1] = '\0';
-			strcat(result->mensajes,lmsg.lista[i].msg);
-		}
+	if(error!=0){
+		printf("ERROR: al consultarMensajesª\n");
 	}
 
 	return SOAP_OK;

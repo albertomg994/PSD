@@ -21,13 +21,13 @@ int usr__loadListaUsuarios(struct ListaUsuarios* lu) {
 	int nUsr = 0;
 
 	// Abrir el fichero
-	fichero = fopen("usuarios.txt", "rt");
+	fichero = fopen("Server/usuarios.txt", "rt");
 
 	if (fichero == NULL) {
-		printf("No se encuentra el fichero \"usuarios.txt\"\n");
+		printf("No se encuentra el fichero \"Server/usuarios.txt\"\n");
 		return -1;
 	} else
-		printf("Fichero \"usuarios.txt\" abierto correctamente.\n");
+		printf("Fichero \"Server/usuarios.txt\" abierto correctamente.\n");
 
 	// Leer los usuarios hasta fin de fichero
 	char c = fgetc(fichero);
@@ -60,7 +60,7 @@ int usr__loadListaUsuarios(struct ListaUsuarios* lu) {
 
 	// Cerrar el fichero
 	if(fclose(fichero) != 0) {
-		printf("Error cerrando el fichero \"usuarios.txt\".\n");
+		printf("Error cerrando el fichero \"Server/usuarios.txt\".\n");
 		return -1;
 	}
 
@@ -77,13 +77,13 @@ int usr__saveListaUsuarios(struct ListaUsuarios* lu) {
 	FILE* fichero;
 
 	// Abrir el fichero (sobrescribe)
-	fichero = fopen("usuarios.txt", "wt");
+	fichero = fopen("Server/usuarios.txt", "wt");
 
 	if (fichero == NULL) {
-		printf("No se encuentra el fichero \"usuarios.txt\"\n");
+		printf("No se encuentra el fichero \"Server/usuarios.txt\"\n");
 		return -1;
 	} else
-		printf("Fichero \"usuarios.txt\" abierto correctamente.\n");
+		printf("Fichero \"Server/usuarios.txt\" abierto correctamente.\n");
 
 	// Escribir los datos
 	int i;
@@ -99,7 +99,7 @@ int usr__saveListaUsuarios(struct ListaUsuarios* lu) {
 
 	// Cerrar el fichero
 	if(fclose(fichero) != 0) {
-		printf("Error cerrando el fichero \"usuarios.txt\".\n");
+		printf("Error cerrando el fichero \"Server/usuarios.txt\".\n");
 		return -1;
 	}
 
@@ -146,6 +146,7 @@ int usr__addUsuario(struct ListaUsuarios* lu, xsd__string username) {
 	struct Usuario new;
 	strcpy(new.username, username); new.connected = 0; new.baja = 0;
 
+	chdir("Server");
 	/*Lo hago despues de comprobacion para asegurar que el usuario no existe */
 	dir = mkdir(username,0777);
 	//chdir("Server");
@@ -157,18 +158,18 @@ int usr__addUsuario(struct ListaUsuarios* lu, xsd__string username) {
 	chdir(username);
 	fichero = fopen("mensajes_pendientes.txt", "wt");
 	if (fichero == NULL) {
-		printf("No se encuentra el fichero \"usuarios.txt\"\n");
+		printf("No se encuentra el fichero \"mensajes_pendientes.txt\"\n");
 		return -1;
 	} else
-		printf("Fichero \"usuarios.txt\" abierto correctamente.\n");
+		printf("Fichero \"mensajes_pendientes.txt\" abierto correctamente.\n");
 	// Cerrar el fichero
 	if(fclose(fichero) != 0) {
-		printf("Error cerrando el fichero \"usuarios.txt\".\n");
+		printf("Error cerrando el fichero \"mensajes_pendientes.txt\".\n");
 		return -1;
 	}
 	chdir("..");
 	printf("Sea ha creado la carpeta %s\n",username);
-	//chdir("..");
+	chdir("..");
 
 	// Copiar el nuevo usuario en la estructura
 	usr__copyUsuario(&lu->usuarios[lu->size], &new);

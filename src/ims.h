@@ -11,18 +11,13 @@
 #define IMS_MAX_NAME_SIZE 256
 #define IMS_MAX_AMIGOS 32
 #define MAX_AMISTADES_PENDIENTES 50
-#define MAX_MENSAJES 50
+#define MAX_MENSAJES 250
 
 typedef char *xsd__string;
 
 // -----------------------------------------------------------------------------
 // Estructuras comunes a cliente y servidor
 // -----------------------------------------------------------------------------
-struct Message {
-	xsd__string name;
-	xsd__string msg;
-};
-
 struct Message2 {
 	char* receptor;
 	char* emisor;

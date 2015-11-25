@@ -18,7 +18,12 @@ struct ListasMensajes{
 // Cabeceras de funciones
 // -----------------------------------------------------------------------------
 void s_mensajes();
+int msg__loadMensajesEnviados(struct ListasMensajes* lmsg);
+int msg__saveMensajesEnviados(struct ListasMensajes* lmsg);
+
 int sendMessage (struct Message2 myMessage);
 int receiveMessage(char* username,struct ListaMensajes* result);
-
+int checkMessage(char* username,struct ListasMensajes* lmsg);
+int consultEntrega(char* username,struct ListasMensajes* lmsg,struct ListaMensajes* result);
+int sendCheck(struct ListasMensajes* lmsg,struct Message2* myMessage);
 #endif
