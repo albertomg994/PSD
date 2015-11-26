@@ -63,7 +63,7 @@ int frq__savePeticiones(struct ListaAmistadesPend* ap) {
 
 	// Check errors while opening
 	if (fichero == NULL) {
-		printf("No se encuentra el fichero \"peticiones_pendientes.txt\"\n");
+		printf("No se encuentra el fichero \"Server/peticiones_pendientes.txt\"\n");
 		return -1;
 	} else
 		printf("peticones_pendientes.txt abierto correctamente.\n");

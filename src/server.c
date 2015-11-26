@@ -255,7 +255,8 @@ int ims__darBaja(struct soap *soap, char* username, struct ResultMsg* result){
 	// 3. Borrar peticiones de amistad (en cualquier dirección) pendientes
 	if (res == 0) frq__delUserRelatedFriendRequests(&ap, username);
 
-	// 4. TODO: Borrar mensajes y conversaciones
+	// 4. Borrar mensajes enviados y la carpte del usuario.
+	if (res == 0) msg_delUserMessage(&lmsg, username);
 
 	result->code = res;
 

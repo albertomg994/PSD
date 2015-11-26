@@ -103,6 +103,52 @@ int msg__saveMensajesEnviados(struct ListasMensajes* lmsg){
    return 0;
 }
 
+int msg_delUserMessage(struct ListasMensajes* lmsg, char* username){
+   int j;
+   // 1º Eliminar la carpeta del usuario.
+   chdir("Server");
+
+   chdir(username);
+   remove("mensajes_pendientes.txt");
+   chdir("..");
+
+   if(rmdir(username) != 0){
+      perror("ERROR: no se puede eliminar el directorio.\n");
+      return -1;
+   }
+
+   // 2º Eliminar los mensajes_enviados por usuario
+   int pos = msg_findMessage(lmsg,username);
+   while(pos >= 0){
+         for(j=pos; j < lmsg->size-1; j++)
+            msg_copyMessage(&lmsg->lista[j],&lmsg->lista[j+1]);
+         lmsg->size--;
+      pos = msg_findMessage(lmsg,username);
+   }
+
+   chdir("..");
+   return 0;
+}
+
+void msg_copyMessage(struct Mensaje* dst, struct Mensaje* src){
+   strcpy(dst->emisor,src->emisor);
+   strcpy(dst->receptor,src->receptor);
+   strcpy(dst->msg,src->msg);
+}
+
+int msg_findMessage(struct ListasMensajes* lmsg,char* emisor){
+   int i = 0, pos = -1;
+   while(pos == -1 && i < lmsg->size){
+      // Si encontramos la petición en cuestión.
+		if (strcmp(emisor, lmsg->lista[i].emisor) == 0 ) {
+				 pos = i;
+		}
+		else
+			i++;
+   }
+   return pos;
+}
+
 int sendMessage (struct Message2 myMessage){
    FILE * fichero;
 
@@ -194,7 +240,6 @@ int checkMessage(char* username,struct ListasMensajes* lmsg){
 					lmsg->lista[i].msg[strlen(lmsg->lista[i].msg)] = '\n';
 					lmsg->lista[i].msg[strlen(lmsg->lista[i].msg)+1] = '\0';
 				}
-				printf("msg----------------->%s\n",lmsg->lista[i].msg);
 			}
 		}
 	}
