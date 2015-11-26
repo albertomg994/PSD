@@ -14,6 +14,9 @@
 // -----------------------------------------------------------------------------
 #define DEBUG_MODE 1
 #define DEBUG_SIGINT 0
+#define ALARMA_TIRAR_SESIONES 0
+#define ALARMA_CHECK_SESIONES 1
+#define SESSION_DURATION 30
 
 struct ListaUsuarios lu;
 struct ListaAmistadesPend ap;
@@ -22,15 +25,29 @@ struct ListasMensajes lmsg;
 
 /* Para indicar las sesiones que podrían expirar */
 volatile int sesion_expira [MAX_USERS];
-
+volatile sig_atomic_t check_sessions;
+volatile sig_atomic_t TIPO_ALARMA;
 // Signal Handlers
-void alarma_sesiones(int sig) {
-	int i;
-	for (i = 0; i < MAX_USERS; i++)
-		sesion_expira[i] = 1;
-	// Ponemos otra vez la alarma
-	printf("Ha saltado una alarma.\n");
-	alarm(20);
+void alarm_handler(int sig) {
+
+	if (TIPO_ALARMA == ALARMA_TIRAR_SESIONES) {
+
+		printf("(!!!) TIRAR SESIONES.\n");
+		int i;
+		for (i = 0; i < MAX_USERS; i++)
+			sesion_expira[i] = 1;
+
+		// Poner la siguiente alarma, alternando.
+		TIPO_ALARMA = ALARMA_CHECK_SESIONES;
+		alarm(SESSION_DURATION/2);
+	}
+	else if (TIPO_ALARMA == ALARMA_CHECK_SESIONES) {
+
+		printf("(!!!) CHECK SESIONES.\n");
+		// Poner la siguiente alarma, alternando.
+		TIPO_ALARMA = ALARMA_TIRAR_SESIONES;
+		alarm(SESSION_DURATION/2);
+	}
 }
 
 // -----------------------------------------------------------------------------
@@ -40,6 +57,8 @@ void alarma_sesiones(int sig) {
 // -----------------------------------------------------------------------------
 // Cabeceras de funciones
 // -----------------------------------------------------------------------------
+void reactivarSesion(char* username);
+int sesionExpirada(char* username);
 
 // -----------------------------------------------------------------------------
 // Main
@@ -56,10 +75,11 @@ int main(int argc, char **argv){
 	}
 
 	/* Establish a handler for SIGALRM signals. */
-	signal(SIGALRM, alarma_sesiones);
+	TIPO_ALARMA = ALARMA_TIRAR_SESIONES;
+	signal(SIGALRM, alarm_handler);
 
 	/* Set an alarm to go off in a little while. */
-	alarm (20);
+	alarm (SESSION_DURATION/2);
 
 	// Init environment
 	soap_init(&soap);
@@ -180,10 +200,12 @@ int main(int argc, char **argv){
 		sigprocmask(SIG_UNBLOCK, &grupo, NULL);
 
 		// Comprobar que sesiones han expirado
-		int i;
-		for (i = 0; i < MAX_USERS; i++) {
-			if (sesion_expira[i] == 1)
-				lu.usuarios[i].connected = 0;
+		if (check_sessions == 1) {
+			int i;
+			for (i = 0; i < MAX_USERS; i++) {
+				if (sesion_expira[i] == 1)
+					lu.usuarios[i].connected = 0;
+			}
 		}
 	}
 
@@ -197,11 +219,12 @@ int ims__sendMessage (struct soap *soap, struct Message2 myMessage, struct Resul
 	// Comprobamos si la sesión ha expirado
 	if (sesionExpirada(myMessage.emisor) == 1) {
 		result->code = -200;
-		printf("Ha caducado la sesión del usuario.\n");
 		strcpy(result->msg, "No tienes sesión abierta.");
 		return SOAP_OK;
-	} else
-		printf("La sesión del usuario está activa.\n");
+	}
+
+	// Reactivar la sesión del usuario
+	reactivarSesion(myMessage.emisor);
 
 	int i = 0, j, salir = 0;
 	// Comprobar si el emisor es el amigo del receptor.
@@ -234,22 +257,48 @@ int ims__sendMessage (struct soap *soap, struct Message2 myMessage, struct Resul
 }
 
 int ims__receiveMessage (struct soap* soap, char* username, struct ListaMensajes* result){
-	int error;
 
-	error=checkMessage(username,&lmsg);
-	if(error!=0){
+	int error;
+	result->msg = malloc(IMS_MAX_MSG_SIZE);
+
+	// Comprobamos si la sesión ha expirado
+	if (sesionExpirada(username) == 1) {
+		result->code = -200;
+		strcpy(result->msg, "No tienes sesión abierta.");
+		return SOAP_OK;
+	}
+
+	// Reactivar la sesión del usuario
+	reactivarSesion(username);
+
+	error = checkMessage(username,&lmsg);
+	if (error!=0) {
 		printf("ERROR: al chequearMensajesª\n");
 	}
-	error= receiveMessage(username,result);
-	if(error!=0){
+	error = receiveMessage(username,result);
+	if (error!=0) {
 		printf("ERROR: al recibirMensajesª\n");
 	}
+
 	return SOAP_OK;
 }
 
 int ims__consultarEntrega(struct soap *soap, char* username, struct ListaMensajes* result){
+
 	int error;
-	error=consultEntrega(username,&lmsg,result);
+	result->msg = malloc(IMS_MAX_MSG_SIZE);
+
+	// Comprobamos si la sesión ha expirado
+	if (sesionExpirada(username) == 1) {
+		result->code = -200;
+		strcpy(result->msg, "No tienes sesión abierta.");
+		return SOAP_OK;
+	}
+
+	// Reactivar la sesión del usuario
+	reactivarSesion(username);
+
+	error = consultEntrega(username,&lmsg,result);
 
 	if(error!=0){
 		printf("ERROR: al consultarMensajesª\n");
@@ -281,6 +330,16 @@ int ims__darBaja(struct soap *soap, char* username, struct ResultMsg* result){
 
 	result->msg = malloc(IMS_MAX_MSG_SIZE);
 	int res = 0;
+
+	// Comprobamos si la sesión ha expirado
+	if (sesionExpirada(username) == 1) {
+		result->code = -200;
+		strcpy(result->msg, "No tienes sesión abierta.");
+		return SOAP_OK;
+	}
+
+	// Reactivar la sesión del usuario
+	reactivarSesion(username);
 
 	// 1. Borrar de la BD de usuarios
 	int pos = usr__findUsuario(&lu, username, NULL);
@@ -372,9 +431,17 @@ int ims__logout (struct soap *soap, char* username, struct ResultMsg *result) {
  */
 int ims__sendFriendRequest (struct soap *soap, struct IMS_PeticionAmistad p, struct ResultMsg* result) {
 
-	printf("ims__sendFriendRequest()\n");
-
 	result->msg = malloc(IMS_MAX_MSG_SIZE);
+
+	// Comprobamos si la sesión ha expirado
+	if (sesionExpirada(p.emisor) == 1) {
+		result->code = -200;
+		strcpy(result->msg, "No tienes sesión abierta.");
+		return SOAP_OK;
+	}
+
+	// Reactivar la sesión del usuario
+	reactivarSesion(p.emisor);
 
 	result->code = frq__addFriendRequest(&ap, &lu, &la, p.emisor, p.receptor);
 
@@ -406,6 +473,16 @@ int ims__getAllFriendRequests (struct soap* soap, char* username, struct ListaPe
 
 	result->msg = malloc(IMS_MAX_MSG_SIZE);
 
+	// Comprobamos si la sesión ha expirado
+	if (sesionExpirada(username) == 1) {
+		result->code = -200;
+		strcpy(result->msg, "No tienes sesión abierta.");
+		return SOAP_OK;
+	}
+
+	// Reactivar la sesión del usuario
+	reactivarSesion(username);
+
 	// Variable para la respuesta
 	result->size = 0;
 	result->peticiones = (xsd__string) malloc(MAX_AMISTADES_PENDIENTES*IMS_MAX_NAME_SIZE + 1);
@@ -431,6 +508,16 @@ int ims__getAllFriendRequests (struct soap* soap, char* username, struct ListaPe
 int ims__answerFriendRequest (struct soap* soap, struct RespuestaPeticionAmistad rp, struct ResultMsg* result) {
 
 	result->msg = malloc(IMS_MAX_MSG_SIZE);
+
+	// Comprobamos si la sesión ha expirado
+	if (sesionExpirada(rp.receptor) == 1) {
+		result->code = -200;
+		strcpy(result->msg, "No tienes sesión abierta.");
+		return SOAP_OK;
+	}
+
+	// Reactivar la sesión del usuario
+	reactivarSesion(rp.receptor);
 
 	/* TODO: cuando esté implementada la parte de mensajería, deberá colocar
 	 un mensaje para emisor y receptor informando del resultado de la petición. */
@@ -460,6 +547,18 @@ int ims__answerFriendRequest (struct soap* soap, struct RespuestaPeticionAmistad
  */
 int ims__getFriendList(struct soap* soap, char* username,  struct ListaAmigos* result) {
 
+	result->msg = malloc(IMS_MAX_MSG_SIZE);
+
+	// Comprobamos si la sesión ha expirado
+	if (sesionExpirada(username) == 1) {
+		result->code = -200;
+		strcpy(result->msg, "No tienes sesión abierta.");
+		return SOAP_OK;
+	}
+
+	// Reactivar la sesión del usuario
+	reactivarSesion(username);
+
 	result->amigos = malloc(IMS_MAX_NAME_SIZE*IMS_MAX_AMIGOS + 1);
 	result->amigos[0] = '\0'; // Si no lo ponemos, violación de segmento al strcat()
 
@@ -473,14 +572,21 @@ int ims__getFriendList(struct soap* soap, char* username,  struct ListaAmigos* r
  * @return 1 si ha expirado, 0 si todavía es válida.
  */
 int sesionExpirada(char* username) {
-	printf("AAAAAAAAAAHHHHHH sesionExpirada()\n");
-	printf("USERNAME: %s\n", username);
 
 	int pos = usr__findUsuario(&lu, username, NULL);
 	if (pos >= 0) {
-		printf("El usuario buscado existe\n");
 		if (lu.usuarios[pos].connected == 0) return 1;
 		else return 0;
 	}
 	return 1;
+}
+
+/**
+ * Quita el flag de 'expirar sesión de un usuario' del servidor, que se activa
+ * cada X tiempo mediante un temporizador.
+ */
+void reactivarSesion(char* username) {
+	int pos = usr__findUsuario(&lu, username, NULL);
+	if (pos >= 0)
+		sesion_expira[pos] = 0;
 }
