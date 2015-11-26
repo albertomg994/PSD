@@ -237,7 +237,7 @@ void menuAvanzado() {
  */
 void cerrarSesion() {
 
-	int res;
+	struct ResultMsg res;
 
 	// 1. Llamar a gSOAP
 	soap_call_ims__logout (&soap, serverURL, "", username_global, &res);
@@ -248,8 +248,8 @@ void cerrarSesion() {
 		exit(1);
 	}
 
-	if (res < 0)
-		printf("El usuario %s no existe.\n", username_global);
+	// 3. Resultado de la llamada
+	if (res.code < 0) printf("%s\n", res.msg);
 	else
 		printf("Has hecho logout.\n");
 }
@@ -262,7 +262,9 @@ void enviarMensaje() {
 	struct Message2 mensaje;
 	char text[IMS_MAX_MSG_SIZE];
 	char receptor[IMS_MAX_NAME_SIZE];
-	int res,i,find=0;
+	int i,find=0;
+	struct ResultMsg res;
+
 	getFriendList(); // Obtener la última versión.
 
 	// 1. Poner el mensaje
@@ -285,7 +287,7 @@ void enviarMensaje() {
 	clean_stdin();
 	mensaje.receptor = malloc (IMS_MAX_NAME_SIZE);
 	strcpy(mensaje.receptor, receptor);
-	// Comprobar que el reseptor es tu amigo
+	// Comprobar que el receptor es tu amigo
 	for (i = 0; i < mis_amigos.nElems && !find; i++){
 		if( strcmp( mis_amigos.amigos[i],mensaje.receptor) == 0)
 			find=1;
@@ -297,14 +299,17 @@ void enviarMensaje() {
 	}else{
 		// 4. Llamada gSOAP
 		soap_call_ims__sendMessage (&soap, serverURL, "", mensaje, &res);
-		// 5. Comprobar errores
+
+		// 5. Comprobar errores gSOAP
 		if (soap.error) {
 			soap_print_fault(&soap, stderr);
 			exit(1);
 		}
-	}
-	if(res != 0){
-		printf("ERROR: el mensaje no se ha enviado.\n");
+
+		// 6. Resultado de lallamada
+		printf("Resultado de la llamada: %d\n", res.code);
+		if (res.code < 0)
+			printf("%s\n", res.msg);
 	}
 }
 
@@ -350,7 +355,7 @@ void receiveFriendRequests() {
 	struct ListaPeticiones lista_peticiones;
 	char aux[MAX_AMISTADES_PENDIENTES][IMS_MAX_NAME_SIZE];
 	struct RespuestaPeticionAmistad rp;
-	int res;
+	struct ResultMsg res;
 
 	// 1. Llamada gSOAP
 	soap_call_ims__getAllFriendRequests (&soap, serverURL, "", username_global, &lista_peticiones);
@@ -361,7 +366,13 @@ void receiveFriendRequests() {
 		exit(1);
 	}
 
-	// 3. Interpretar los resultados
+	// 3. Resultado de la llamada
+	if (lista_peticiones.code < 0) {
+		printf("%s\n", lista_peticiones.msg);
+		return;
+	}
+
+	// 4. Interpretar los resultados
 	if (lista_peticiones.size == 0)
 		printf("No tienes ninguna petición de amistad pendiente.\n");
 	else {
@@ -399,19 +410,19 @@ void receiveFriendRequests() {
 			// Llamada gSOAP
 			soap_call_ims__answerFriendRequest (&soap, serverURL, "", rp, &res);
 
-			if (res < 0)
-				printf("Ocurrió un error al aceptar la petición e %s.\n", rp.emisor);
-
 			// Comprobar errores
 			if (soap.error) {
 				soap_print_fault(&soap, stderr);
 				exit(1);
 			}
+
+			// Resultado de la llamada
+			if (res.code < 0)
+				printf("%s\n", res.msg);
 		}
 
 		// Pedir la lista de amigos actualizada al servidor.
-		if (getFriendList() < 0)
-			printf("Error obteniendo tu lista de amigos del servidor.\n");
+		getFriendList();
 	}
 }
 
@@ -450,6 +461,12 @@ int getFriendList() {
 	if (soap.error) {
 		soap_print_fault(&soap, stderr);
 		return -1; //exit(1);
+	}
+
+	// Resultado de la llamada
+	if (lista.code < 0) {
+		printf("%s\n", lista.msg);
+		return -1;
 	}
 
 	// Procesar y meter en la estructura

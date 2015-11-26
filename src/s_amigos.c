@@ -19,8 +19,8 @@ int frq__loadPeticiones(struct ListaAmistadesPend* ap) {
 	if (fichero == NULL) {
 		printf("No se encuentra el fichero \"Server/peticiones_pendientes.txt\"\n");
 		return -1;
-	} else
-		printf("Server/peticiones_pendientes.txt abierto correctamente.\n");
+	} /*else
+		printf("Server/peticiones_pendientes.txt abierto correctamente.\n");*/
 
 	// Leer los usuarios y sus amigos hasta fin de fichero
 	int nPeticiones = 0;
@@ -65,8 +65,8 @@ int frq__savePeticiones(struct ListaAmistadesPend* ap) {
 	if (fichero == NULL) {
 		printf("No se encuentra el fichero \"peticiones_pendientes.txt\"\n");
 		return -1;
-	} else
-		printf("peticones_pendientes.txt abierto correctamente.\n");
+	} /*else
+		printf("peticones_pendientes.txt abierto correctamente.\n");*/
 
 	// Escribir los datos
 	int i;

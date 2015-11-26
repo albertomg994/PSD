@@ -26,8 +26,8 @@ int usr__loadListaUsuarios(struct ListaUsuarios* lu) {
 	if (fichero == NULL) {
 		printf("No se encuentra el fichero \"Server/usuarios.txt\"\n");
 		return -1;
-	} else
-		printf("Fichero \"Server/usuarios.txt\" abierto correctamente.\n");
+	} /*else
+		printf("Fichero \"Server/usuarios.txt\" abierto correctamente.\n");*/
 
 	// Leer los usuarios hasta fin de fichero
 	char c = fgetc(fichero);
@@ -82,8 +82,8 @@ int usr__saveListaUsuarios(struct ListaUsuarios* lu) {
 	if (fichero == NULL) {
 		printf("No se encuentra el fichero \"Server/usuarios.txt\"\n");
 		return -1;
-	} else
-		printf("Fichero \"Server/usuarios.txt\" abierto correctamente.\n");
+	} /*else
+		printf("Fichero \"Server/usuarios.txt\" abierto correctamente.\n");*/
 
 	// Escribir los datos
 	int i;
@@ -160,8 +160,8 @@ int usr__addUsuario(struct ListaUsuarios* lu, xsd__string username) {
 	if (fichero == NULL) {
 		printf("No se encuentra el fichero \"mensajes_pendientes.txt\"\n");
 		return -1;
-	} else
-		printf("Fichero \"mensajes_pendientes.txt\" abierto correctamente.\n");
+	} /*else
+		printf("Fichero \"mensajes_pendientes.txt\" abierto correctamente.\n");*/
 	// Cerrar el fichero
 	if(fclose(fichero) != 0) {
 		printf("Error cerrando el fichero \"mensajes_pendientes.txt\".\n");

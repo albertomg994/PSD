@@ -40,17 +40,23 @@ struct RespuestaPeticionAmistad {
 struct ListaPeticiones {
 	int size;
 	xsd__string peticiones; 	// Nombres de las personas, separados por ' '
+	int code;						// Código de error o éxito
+	xsd__string msg;				// Mensaje asociado al código
 };
 
 /* Lista de amigos de un usuario. */
 struct ListaAmigos {
 	int nElems;
 	xsd__string amigos;
+	int code;			// Código de error o éxito
+	xsd__string msg;	// Mensaje asociado al código
 };
 
 struct ListaMensajes {
 	int nElems;
 	xsd__string mensajes;
+	int code;				// Código de error o éxito
+	xsd__string msg;		// Mensaje asociado al código
 };
 
 /* Se usa para devolver al cliente el resultado de una llamada gsoap. */
@@ -64,7 +70,7 @@ struct ResultMsg {
 // -----------------------------------------------------------------------------
 
 // Enviar un mensaje a un usuario
-int ims__sendMessage (struct Message2 myMessage, int *result);
+int ims__sendMessage (struct Message2 myMessage, struct ResultMsg *result);
 
 // Recibir un mensaje de prueba
 int ims__receiveMessage (char* username, struct ListaMensajes* result);
@@ -82,15 +88,13 @@ int ims__darBaja(char* username, struct ResultMsg *result);
 int ims__login (char* username, struct ResultMsg *result);
 
 // Logout del sistema
-int ims__logout (char* username, int *result);
-
-// Una sola invocación que revise mensajes, peticiones de amistad, avisos de entrega
+int ims__logout (char* username, struct ResultMsg *result);
 
 // Enviar una petición de amistad
 int ims__sendFriendRequest (struct IMS_PeticionAmistad p, struct ResultMsg* result);
 
 // Enviar una petición de amistad
-int ims__answerFriendRequest (struct RespuestaPeticionAmistad rp, int* result);
+int ims__answerFriendRequest (struct RespuestaPeticionAmistad rp, struct ResultMsg *result);
 
 // Recibir todos los mensajes
 //int ims__getAllMessages (int* result);

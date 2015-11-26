@@ -1,0 +1,14 @@
+// Errores genéricos
+0 Éxito
+
+
+-200 No tienes sesión abierta
+-201 El usuario no existe
+
+// Errores de amistades
+-300 El usuario no es tu amigo
+
+
+// Error del servidor
+-500 Error del servidor
+-501 Error - (genérico, cualquiera)

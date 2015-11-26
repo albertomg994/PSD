@@ -18,10 +18,20 @@
 struct ListaUsuarios lu;
 struct ListaAmistadesPend ap;
 struct ListasAmigos la;
-
 struct ListasMensajes lmsg;
-/* Flag para activar el guardado. */
-volatile sig_atomic_t save_data = 0;
+
+/* Para indicar las sesiones que podrían expirar */
+volatile int sesion_expira [MAX_USERS];
+
+// Signal Handlers
+void alarma_sesiones(int sig) {
+	int i;
+	for (i = 0; i < MAX_USERS; i++)
+		sesion_expira[i] = 1;
+	// Ponemos otra vez la alarma
+	printf("Ha saltado una alarma.\n");
+	alarm(20);
+}
 
 // -----------------------------------------------------------------------------
 // Estructuras propias del servidor
@@ -45,6 +55,12 @@ int main(int argc, char **argv){
 		exit(-1);
 	}
 
+	/* Establish a handler for SIGALRM signals. */
+	signal(SIGALRM, alarma_sesiones);
+
+	/* Set an alarm to go off in a little while. */
+	alarm (20);
+
 	// Init environment
 	soap_init(&soap);
 
@@ -60,6 +76,10 @@ int main(int argc, char **argv){
 	// Cargamos los mensjaes no chequeados
 	if (msg__loadMensajesEnviados(&lmsg) == -1) exit(-1);
 
+	// Inicializar el contenido del array de expiración de sesiones
+	int i;
+	for (i = 0; i < MAX_USERS; i++)
+		sesion_expira[i] = 0;
 
 	// Bind to the specified port. Devuelve el socket primario del servidor.
 	m = soap_bind(&soap, NULL, atoi(argv[1]), 100);
@@ -158,15 +178,33 @@ int main(int argc, char **argv){
 
 		// Desenmascarar SIGINIT
 		sigprocmask(SIG_UNBLOCK, &grupo, NULL);
+
+		// Comprobar que sesiones han expirado
+		int i;
+		for (i = 0; i < MAX_USERS; i++) {
+			if (sesion_expira[i] == 1)
+				lu.usuarios[i].connected = 0;
+		}
 	}
 
 	return 0;
 }
 
-int ims__sendMessage (struct soap *soap, struct Message2 myMessage, int *result) {
+int ims__sendMessage (struct soap *soap, struct Message2 myMessage, struct ResultMsg *result) {
+
+	result->msg = malloc(IMS_MAX_MSG_SIZE);
+
+	// Comprobamos si la sesión ha expirado
+	if (sesionExpirada(myMessage.emisor) == 1) {
+		result->code = -200;
+		printf("Ha caducado la sesión del usuario.\n");
+		strcpy(result->msg, "No tienes sesión abierta.");
+		return SOAP_OK;
+	} else
+		printf("La sesión del usuario está activa.\n");
 
 	int i = 0, j, salir = 0;
-	// Comprobar si el emisor es el amigo del reseptor.
+	// Comprobar si el emisor es el amigo del receptor.
 	while (i < la.size && salir == 0) {
 		if (strcmp(myMessage.emisor, la.listas[i].usuario) == 0) {
 			for (j = 0; j < la.listas[i].size; j++) {
@@ -177,16 +215,20 @@ int ims__sendMessage (struct soap *soap, struct Message2 myMessage, int *result)
 		i++;
 	}
 
+	// Si el usuario al que queremos enviar es nuestro amigo
 	if(salir == 1){
-		sendCheck(&lmsg,&myMessage);
-		printf("-----Server: es tu amigo.\n");
-		*result = sendMessage (myMessage);
-
-	}else{
-		printf("-----Server: no es tu amigo el mensaje ignorado.\n");
-		*result = -1;
+		sendCheck(&lmsg, &myMessage);
+		if (sendMessage (myMessage) < 0) {
+			result->code = -500;
+			strcpy(result->msg, "Error del servidor.");
+		} else
+			result->code = 0;
 	}
-
+	// Si no...
+	else{
+		result->code = -300;
+		strcpy(result->msg, "El usuario no es tu amigo.");
+	}
 
 	return SOAP_OK;
 }
@@ -216,7 +258,6 @@ int ims__consultarEntrega(struct soap *soap, char* username, struct ListaMensaje
 	return SOAP_OK;
 
 }
-
 
 int ims__darAlta (struct soap *soap, char* username, struct ResultMsg *result) {
 
@@ -284,8 +325,10 @@ int ims__login (struct soap *soap, char* username, struct ResultMsg *result) {
 		result->code = -1;
 	else if (aux.connected == 1)		// Ya tiene una sesión iniciada
 		result->code = -2;
-	else										// Login correcto
+	else {										// Login correcto
 		result->code = 0;
+		lu.usuarios[pos].connected = 1;
+	}
 
 	// Rellenamos la estructura que se devuelve al cliente
 	if (result->code == 0)
@@ -304,19 +347,21 @@ int ims__login (struct soap *soap, char* username, struct ResultMsg *result) {
  * @param username Nombre del usuario que hace logout.
  * @param result Resultado de la llamada al servicio gSOAP.
  */
-int ims__logout (struct soap *soap, char* username, int *result) {
+int ims__logout (struct soap *soap, char* username, struct ResultMsg *result) {
+
+	result->msg = malloc(IMS_MAX_MSG_SIZE);
 
 	// Buscar si existe un usuario con el mismo nombre
 	int pos = usr__findUsuario(&lu, username, NULL);
 
 	if (pos >= 0) {
 		lu.usuarios[pos].connected = 0;
-		*result = 0;
+		result->code = 0;
+		strcpy(result->msg, "Éxito.");
 	} else {
-		*result = -1;
+		result->code = -201;
+		strcpy(result->msg, "El usuario no existe.");
 	}
-
-	if(DEBUG_MODE) usr__printListaUsuarios(&lu);
 
 	return SOAP_OK;
 }
@@ -324,7 +369,7 @@ int ims__logout (struct soap *soap, char* username, int *result) {
 /**
  * Servicio gSOAP para enviar peticiones de amistad.
  */
-int ims__sendFriendRequest (struct soap *soap, struct IMS_PeticionAmistad p, struct ResultMsg *result) {
+int ims__sendFriendRequest (struct soap *soap, struct IMS_PeticionAmistad p, struct ResultMsg* result) {
 
 	printf("ims__sendFriendRequest()\n");
 
@@ -356,7 +401,9 @@ int ims__sendFriendRequest (struct soap *soap, struct IMS_PeticionAmistad p, str
  * @param username Nombre de usuario que invoca la llamada.
  * @param lista Estructura donde se devuelve la lista de peticiones pendientes.
  */
-int ims__getAllFriendRequests (struct soap* soap, char* username, struct ListaPeticiones *result) {
+int ims__getAllFriendRequests (struct soap* soap, char* username, struct ListaPeticiones* result) {
+
+	result->msg = malloc(IMS_MAX_MSG_SIZE);
 
 	// Variable para la respuesta
 	result->size = 0;
@@ -366,11 +413,9 @@ int ims__getAllFriendRequests (struct soap* soap, char* username, struct ListaPe
 	// Rellenar la estructura
 	frq__retrievePendingFriendRequests(username, &ap, result);
 
-	// Mostrar la estructura
-	printf("Contenido de la estructura:\n");
-	printf("---------------------------\n");
-	printf("result->nPeticiones = %d\n", result->size);
-	printf("Nombres: %s\n", result->peticiones);
+	// Resultado de la llamada
+	result->code = 0;
+	strcpy(result->msg, "Éxito.");
 
 	return SOAP_OK;
 }
@@ -382,18 +427,23 @@ int ims__getAllFriendRequests (struct soap* soap, char* username, struct ListaPe
  * @param rp Estructura con la respuesta a la petición de amistad.
  * @param result Resultado de la llamada al servicio gSOAP.
  */
-int ims__answerFriendRequest (struct soap* soap, struct RespuestaPeticionAmistad rp, int* result) {
+int ims__answerFriendRequest (struct soap* soap, struct RespuestaPeticionAmistad rp, struct ResultMsg* result) {
+
+	result->msg = malloc(IMS_MAX_MSG_SIZE);
 
 	/* TODO: cuando esté implementada la parte de mensajería, deberá colocar
 	 un mensaje para emisor y receptor informando del resultado de la petición. */
 
 	if(rp.aceptada == 1) {
-		printf("%s ha aceptado la petición de amistad de %s.\n", rp.receptor, rp.emisor);
-		*result = frd__addFriendRelationship(&la, rp.emisor, rp.receptor);
-		frd__saveFriendsData(&la); /* TODO: esto habrá que quitarlo */
+
+		result->code = frd__addFriendRelationship(&la, rp.emisor, rp.receptor);
+
+		// Rellenar resultado de la llamada
+		if (result->code < 0)
+			strcpy(result->msg, "Error.");
+		else
+			strcpy(result->msg, "Éxito.");
 	}
-	else
-		printf("%s ha denegado la petición de amistad de %s.\n", rp.receptor, rp.emisor);
 
 	// Borramos la petición de amistad de la estructura en memoria
 	frq__delFriendRequest(&ap, rp.emisor, rp.receptor);
@@ -415,4 +465,21 @@ int ims__getFriendList(struct soap* soap, char* username,  struct ListaAmigos* r
 	frd__getFriendList(&la, username, result->amigos);
 
 	return SOAP_OK;
+}
+
+/**
+ * Comprueba si la sesión de un usuario ha expirado.
+ * @return 1 si ha expirado, 0 si todavía es válida.
+ */
+int sesionExpirada(char* username) {
+	printf("AAAAAAAAAAHHHHHH sesionExpirada()\n");
+	printf("USERNAME: %s\n", username);
+
+	int pos = usr__findUsuario(&lu, username, NULL);
+	if (pos >= 0) {
+		printf("El usuario buscado existe\n");
+		if (lu.usuarios[pos].connected == 0) return 1;
+		else return 0;
+	}
+	return 1;
 }
