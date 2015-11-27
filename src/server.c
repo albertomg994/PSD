@@ -8,6 +8,10 @@
 #include "s_usuarios.h"
 #include "s_mensajes.h"
 #include "s_amigos.h"
+#include "pthread.h"
+#include "signal.h"
+#include <sys/types.h>
+#include <unistd.h>
 
 // -----------------------------------------------------------------------------
 // Tipos, constantes y variables globales
@@ -27,6 +31,8 @@ struct ListasMensajes lmsg;
 volatile int sesion_expira [MAX_USERS];
 volatile sig_atomic_t check_sessions;
 volatile sig_atomic_t TIPO_ALARMA;
+volatile sig_atomic_t exit_th_check_sessions;
+
 // Signal Handlers
 void alarm_handler(int sig) {
 
@@ -44,10 +50,16 @@ void alarm_handler(int sig) {
 	else if (TIPO_ALARMA == ALARMA_CHECK_SESIONES) {
 
 		printf("(!!!) CHECK SESIONES.\n");
+		check_sessions = 1;
 		// Poner la siguiente alarma, alternando.
 		TIPO_ALARMA = ALARMA_TIRAR_SESIONES;
 		alarm(SESSION_DURATION/2);
 	}
+}
+void sigint_handler(int sig) {
+	exit_th_check_sessions = 1;
+	signal(SIGINT, SIG_DFL);		// Reset to default handler
+	signal(getpid(), SIGINT);		// Launch SIGINT again
 }
 
 // -----------------------------------------------------------------------------
@@ -59,7 +71,7 @@ void alarm_handler(int sig) {
 // -----------------------------------------------------------------------------
 void reactivarSesion(char* username);
 int sesionExpirada(char* username);
-
+void* th_check_sessions(void* arg);
 // -----------------------------------------------------------------------------
 // Main
 // -----------------------------------------------------------------------------
@@ -68,6 +80,7 @@ int main(int argc, char **argv){
 	int m, s;				// sockets
 	struct soap soap;
 	sigset_t grupo;		// grupo para enmascarar SIGINT
+	pthread_t th_comprueba_sesiones;
 
 	if (argc < 2) {
 		printf("Usage: %s <port>\n",argv[0]);
@@ -80,6 +93,16 @@ int main(int argc, char **argv){
 
 	/* Set an alarm to go off in a little while. */
 	alarm (SESSION_DURATION/2);
+
+	/* Handler para SIGINT */
+	signal(SIGINT, sigint_handler);
+
+	// Lanzamos la hebra
+	int res = pthread_create(&th_comprueba_sesiones, NULL, th_check_sessions, NULL);
+	if (res != 0) {
+		printf("Error creando la hebra.\n");
+		exit(EXIT_FAILURE);
+	}
 
 	// Init environment
 	soap_init(&soap);
@@ -187,26 +210,18 @@ int main(int argc, char **argv){
 		frq__savePeticiones(&ap);
 		msg__saveMensajesEnviados(&lmsg);
 
-		// Depurar la captura de CTRL+C
-		if(DEBUG_SIGINT) {
-			sigset_t pendientes;
-			sigpending(&pendientes);
-			if (sigismember(&pendientes, SIGINT))
-				printf("SIGINT está en pendientes...\n");
-			printf("Desenmascaro SIGINT\n");
-		}
+		// Ver si llego CTRL+C mientras atendíamos una petición.
+		/*sigset_t pendientes;
+		sigpending(&pendientes);
+		if (sigismember(&pendientes, SIGINT)) {
+			printf("SIGINT está en pendientes...\n");
+			printf("Intento cerrar el thread de las comprobaciones...\n");
+			exit_th_check_sessions = 1;
+		}*/
 
 		// Desenmascarar SIGINIT
 		sigprocmask(SIG_UNBLOCK, &grupo, NULL);
 
-		// Comprobar que sesiones han expirado
-		if (check_sessions == 1) {
-			int i;
-			for (i = 0; i < MAX_USERS; i++) {
-				if (sesion_expira[i] == 1)
-					lu.usuarios[i].connected = 0;
-			}
-		}
 	}
 
 	return 0;
@@ -219,7 +234,7 @@ int ims__sendMessage (struct soap *soap, struct Message2 myMessage, struct Resul
 	// Comprobamos si la sesión ha expirado
 	if (sesionExpirada(myMessage.emisor) == 1) {
 		result->code = -200;
-		strcpy(result->msg, "No tienes sesión abierta.");
+		strcpy(result->msg, "ERROR (-200): No tienes sesión abierta.");
 		return SOAP_OK;
 	}
 
@@ -264,7 +279,7 @@ int ims__receiveMessage (struct soap* soap, char* username, struct ListaMensajes
 	// Comprobamos si la sesión ha expirado
 	if (sesionExpirada(username) == 1) {
 		result->code = -200;
-		strcpy(result->msg, "No tienes sesión abierta.");
+		strcpy(result->msg, "ERROR (-200): No tienes sesión abierta.");
 		return SOAP_OK;
 	}
 
@@ -291,7 +306,7 @@ int ims__consultarEntrega(struct soap *soap, char* username, struct ListaMensaje
 	// Comprobamos si la sesión ha expirado
 	if (sesionExpirada(username) == 1) {
 		result->code = -200;
-		strcpy(result->msg, "No tienes sesión abierta.");
+		strcpy(result->msg, "ERROR (-200): No tienes sesión abierta.");
 		return SOAP_OK;
 	}
 
@@ -334,7 +349,7 @@ int ims__darBaja(struct soap *soap, char* username, struct ResultMsg* result){
 	// Comprobamos si la sesión ha expirado
 	if (sesionExpirada(username) == 1) {
 		result->code = -200;
-		strcpy(result->msg, "No tienes sesión abierta.");
+		strcpy(result->msg, "ERROR (-200): No tienes sesión abierta.");
 		return SOAP_OK;
 	}
 
@@ -436,7 +451,7 @@ int ims__sendFriendRequest (struct soap *soap, struct IMS_PeticionAmistad p, str
 	// Comprobamos si la sesión ha expirado
 	if (sesionExpirada(p.emisor) == 1) {
 		result->code = -200;
-		strcpy(result->msg, "No tienes sesión abierta.");
+		strcpy(result->msg, "ERROR (-200): No tienes sesión abierta.");
 		return SOAP_OK;
 	}
 
@@ -476,7 +491,7 @@ int ims__getAllFriendRequests (struct soap* soap, char* username, struct ListaPe
 	// Comprobamos si la sesión ha expirado
 	if (sesionExpirada(username) == 1) {
 		result->code = -200;
-		strcpy(result->msg, "No tienes sesión abierta.");
+		strcpy(result->msg, "ERROR (-200): No tienes sesión abierta.");
 		return SOAP_OK;
 	}
 
@@ -512,7 +527,7 @@ int ims__answerFriendRequest (struct soap* soap, struct RespuestaPeticionAmistad
 	// Comprobamos si la sesión ha expirado
 	if (sesionExpirada(rp.receptor) == 1) {
 		result->code = -200;
-		strcpy(result->msg, "No tienes sesión abierta.");
+		strcpy(result->msg, "ERROR (-200): No tienes sesión abierta.");
 		return SOAP_OK;
 	}
 
@@ -549,10 +564,12 @@ int ims__getFriendList(struct soap* soap, char* username,  struct ListaAmigos* r
 
 	result->msg = malloc(IMS_MAX_MSG_SIZE);
 
+	printf("Llega una petición de %s. Comprobamos si su sesión ha expirado.\n", username);
+
 	// Comprobamos si la sesión ha expirado
 	if (sesionExpirada(username) == 1) {
 		result->code = -200;
-		strcpy(result->msg, "No tienes sesión abierta.");
+		strcpy(result->msg, "ERROR (-200): No tienes sesión abierta.");
 		return SOAP_OK;
 	}
 
@@ -573,10 +590,18 @@ int ims__getFriendList(struct soap* soap, char* username,  struct ListaAmigos* r
  */
 int sesionExpirada(char* username) {
 
+	printf("Comprobando si ha expirado la sesión de %s...\n", username);
+
 	int pos = usr__findUsuario(&lu, username, NULL);
 	if (pos >= 0) {
-		if (lu.usuarios[pos].connected == 0) return 1;
-		else return 0;
+		if (lu.usuarios[pos].connected == 0) {
+			printf("El usuario figura como NO conectado.\n");
+			return 1;
+		}
+		else {
+			printf("El usuario figura como conectado.\n");
+			return 0;
+		}
 	}
 	return 1;
 }
@@ -589,4 +614,26 @@ void reactivarSesion(char* username) {
 	int pos = usr__findUsuario(&lu, username, NULL);
 	if (pos >= 0)
 		sesion_expira[pos] = 0;
+	printf("Reactivando sesión de %s\n", username);
+	printf("sesion_expira[%d] = %d\n", pos, sesion_expira[pos]);
+}
+
+/**
+ * Hebra encargada de desconectar a los usuarios si sesion_expira[i] = 1
+ */
+void* th_check_sessions(void* arg) {
+
+	while (!exit_th_check_sessions) {
+		if (check_sessions == 1) {
+			printf("La hebra comprueba las sesiones inactivas...\n");
+			int i;
+			for (i = 0; i < MAX_USERS; i++) {
+				if (sesion_expira[i] == 1)
+					lu.usuarios[i].connected = 0;
+			}
+			check_sessions = 0;
+		}
+	}
+	printf("th_check_sessions makes exit...\n");
+	pthread_exit(0);
 }

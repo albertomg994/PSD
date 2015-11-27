@@ -490,15 +490,20 @@ void recibirMensaje(){
 
    // Llamada gSOAP
    soap_call_ims__receiveMessage(&soap, serverURL, "", username_global, &listaMensajes);
-	printf("--------------------------\n");
-	printf("%s",listaMensajes.mensajes);
-	printf("--------------------------\n");
-   // Comprobar errores
+
+   // Comprobar errores gSOAP
 	if (soap.error) {
 		soap_print_fault(&soap, stderr);
 		exit(1);
 	}
 
+	if (listaMensajes.code < 0)
+		printf("%s\n", listaMensajes.msg);
+	else {
+		printf("--------------------------\n");
+		printf("%s",listaMensajes.mensajes);
+		printf("--------------------------\n");
+	}
 }
 
 void consultarEntrega(){
