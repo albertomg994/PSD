@@ -92,24 +92,24 @@ int main(int argc, char **argv){
 		exit(-1);
 	}
 
-	/* Establish a handler for SIGALRM signals. */
+	/* Establish a handler for SIGALRM */
 	TIPO_ALARMA = ALARMA_TIRAR_SESIONES;
 	signal(SIGALRM, alarm_handler);
 
 	/* Set an alarm to go off in a little while. */
 	alarm (SESSION_DURATION/2);
 
-	/* Handler para SIGINT */
+	/* Establish a handler for SIGINT */
 	signal(SIGINT, sigint_handler);
 
-	// Lanzamos la hebra
+	// Launch thread that checks sessions
 	int res = pthread_create(&th_comprueba_sesiones, NULL, th_check_sessions, NULL);
 	if (res != 0) {
 		printf("Error creando la hebra.\n");
 		exit(EXIT_FAILURE);
 	}
 
-	// Init environment
+	// Init soap environment
 	soap_init(&soap);
 
 	// Cargamos la información de usuarios
