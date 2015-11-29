@@ -9,7 +9,7 @@ all:	client server
 client:	client.c externo.o externo.h
 	gcc $(SSL_FLAGS) -o client client.c soapC.c soapClient.c externo.o -I$(GSOAP_INCLUDE) -lgsoap $(SSL_LIBS) -L$(GSOAP_LIB)
 
-server:	server.c externo.o externo.h s_usuarios.o s_usuarios.h s_mensajes.o s_mensajes.h s_amigos.o s_amigos.h
+server:	server.c externo.o externo.h s_usuarios.o s_usuarios.h s_mensajes.o s_mensajes.h s_amigos.o s_amigos.h s_services.h
 	gcc $(SSL_FLAGS) -o server server.c soapC.c soapServer.c externo.o s_usuarios.o s_mensajes.o s_amigos.o -pthread -I$(GSOAP_INCLUDE) -lgsoap $(SSL_LIBS) -L$(GSOAP_LIB)
 
 clean:

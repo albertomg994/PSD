@@ -30,6 +30,7 @@ int usr__printListaUsuarios(struct ListaUsuarios* lu);
 int usr__addUsuario(struct ListaUsuarios* lu, xsd__string username);
 int usr__delUsuario(struct ListaUsuarios* lu, xsd__string username);
 int usr__findUsuario(struct ListaUsuarios* lu, xsd__string username, struct Usuario* copy);
+int usr__isUsernameAvailable(struct ListaUsuarios* lu, xsd__string username);
 
 void usr__copyUsuario(struct Usuario* dst, struct Usuario* src);
 

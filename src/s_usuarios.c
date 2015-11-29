@@ -227,6 +227,25 @@ int usr__findUsuario(struct ListaUsuarios* lu, xsd__string username, struct Usua
 }
 
 /**
+* Comprueba si un nombre de usuario está disponible.
+* @param lu Puntero a la estructura del servidor.
+* @param username Nombre de usuario
+* @return 1 si está disponible, 0 e.o.c.
+ */
+int usr__isUsernameAvailable(struct ListaUsuarios* lu, xsd__string username) {
+
+	int i = 0, available = 1;
+
+	while (available && i < lu->size) {
+		if (strcmp(lu->usuarios[i].username, username) == 0)
+			available = 0;
+		i++;
+	}
+
+	return available;
+}
+
+/**
  * Copia el un 'Usuario' de una variable a otra.
  * @param dst Puntero a donde copiaremos el usuario.
  * @param src Puntero a la variable a copiar.

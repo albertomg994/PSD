@@ -13,6 +13,7 @@ struct MisAmigos {
 	int nElems;
 	char amigos[IMS_MAX_AMIGOS][IMS_MAX_NAME_SIZE];
 };
+
 // -----------------------------------------------------------------------------
 // Variables globales
 // -----------------------------------------------------------------------------
@@ -20,6 +21,7 @@ struct soap soap;
 char serverURL[50];
 char username_global[IMS_MAX_NAME_SIZE];
 struct MisAmigos mis_amigos;
+
 // -----------------------------------------------------------------------------
 // Cabeceras de funciones
 // -----------------------------------------------------------------------------
@@ -120,7 +122,7 @@ void registrarse() {
 		exit(1);
 	}
 
-	// Mostrar el resultado de la llamada al servidor:
+	// 4. Resultado de la llamada:
 	printf("%s\n", res.msg);
 }
 
@@ -140,6 +142,7 @@ void darBaja() {
 		exit(1);
 	}
 
+	// 3. Resultado de la llamada
 	printf("%s\n", res.msg);
 }
 
@@ -154,7 +157,6 @@ void iniciarSesion() {
 
 	// 1. Pedir datos del login
 	printf("Nombre de usuario:");
-	//char name[IMS_MAX_NAME_SIZE];
 	scanf("%31s", username_global);
 	username_global[strlen(username_global)] = '\0';
 	clean_stdin();
@@ -168,10 +170,10 @@ void iniciarSesion() {
 		exit(1);
 	}
 
-	// Imprimir resultado de la llamada
+	// 4. Resultado de la llamada
 	printf("%s\n", res.msg);
 
-	// Sólo si el inicio de sesión fue correcto, seguimos
+	// 5. Si el inicio de sesión fue correcto, seguimos
 	if (res.code >= 0) {
 		if (getFriendList() < 0)
 			printf("Error obteniendo tu lista de amigos del servidor.\n");
@@ -337,13 +339,17 @@ void sendFriendRequest() {
 	// 3. Llamada gSOAP
 	soap_call_ims__sendFriendRequest(&soap, serverURL, "", pet, &res);
 
-	// 4. Comprobar errores de gSOAP
+	// 4. Liberar memoria
+	free(pet.emisor);
+	free(pet.receptor);
+
+	// 5. Comprobar errores de gSOAP
 	if (soap.error) {
 		soap_print_fault(&soap, stderr);
 		exit(1);
 	}
 
-	// Mostar al cliente el resultado de la llamada
+	// 6. Resultado de la llamada
 	printf("%s\n", res.msg);
 }
 
@@ -409,6 +415,10 @@ void receiveFriendRequests() {
 
 			// Llamada gSOAP
 			soap_call_ims__answerFriendRequest (&soap, serverURL, "", rp, &res);
+
+			// Liberar memoria
+			free(rp.emisor);
+			free(rp.receptor);
 
 			// Comprobar errores
 			if (soap.error) {
@@ -494,6 +504,7 @@ void recibirMensaje(){
    // Comprobar errores gSOAP
 	if (soap.error) {
 		soap_print_fault(&soap, stderr);
+		free(listaMensajes.mensajes);
 		exit(1);
 	}
 
@@ -504,20 +515,31 @@ void recibirMensaje(){
 		printf("%s",listaMensajes.mensajes);
 		printf("--------------------------\n");
 	}
+
+	// Liberar memoria
+	free(listaMensajes.mensajes);
 }
 
-void consultarEntrega(){
+void consultarEntrega() {
+
 	struct ListaMensajes listaMensajes;
+
 	// Allocate space for the message field of the myMessage struct then copy it
 	listaMensajes.mensajes = malloc( (IMS_MAX_NAME_SIZE+IMS_MAX_MSG_SIZE)*MAX_MENSAJES);
+
 	// Llamada gSOAP
    soap_call_ims__consultarEntrega(&soap, serverURL, "", username_global, &listaMensajes);
 	printf("--------------------------\n");
 	printf("%s",listaMensajes.mensajes);
 	printf("--------------------------\n");
+
    // Comprobar errores
 	if (soap.error) {
 		soap_print_fault(&soap, stderr);
+		free(listaMensajes.mensajes);
 		exit(1);
 	}
+
+	// Liberar memoria
+	free(listaMensajes.mensajes);
 }
