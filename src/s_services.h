@@ -136,6 +136,7 @@ int ims__darAlta (struct soap *soap, char* username, struct ResultMsg *result) {
 		result->code = 0;
 		strcpy(result->msg, "Usuario registrado correctamente.");
 		frd__createFriendListEntry(&la, username);
+		usr__addUsuario(&lu, username);
 	}
 	else {
 		result->code = -2;

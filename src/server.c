@@ -9,8 +9,9 @@
 #include "s_usuarios.h"
 #include "s_mensajes.h"
 #include "s_amigos.h"
-#include "pthread.h"
-#include "signal.h"
+
+#include <pthread.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include "s_services.h"
@@ -22,7 +23,7 @@
 #define DEBUG_SIGINT 0
 #define ALARMA_TIRAR_SESIONES 0	/* SIGALARM handler, type 1 */
 #define ALARMA_CHECK_SESIONES 1	/* SIGALARM handler, type 2 */
-#define SESSION_DURATION 30		/* Client session duration  */
+#define SESSION_DURATION 500		/* Client session duration  */
 
 struct ListaUsuarios lu;
 struct ListaAmistadesPend ap;
@@ -82,13 +83,18 @@ void* th_check_sessions (void* arg);
 // -----------------------------------------------------------------------------
 int main(int argc, char **argv){
 
-	int m, s;				// sockets
+	SOAP_SOCKET m, s;	// sockets
 	struct soap soap;
+
 	sigset_t grupo;		// grupo para enmascarar SIGINT
 	pthread_t th_comprueba_sesiones;
 
+
 	if (argc < 2) {
 		printf("Usage: %s <port>\n",argv[0]);
+		soap_serve(&soap);
+      soap_destroy(&soap);
+      soap_end(&soap);
 		exit(-1);
 	}
 
@@ -98,6 +104,7 @@ int main(int argc, char **argv){
 
 	/* Set an alarm to go off in a little while. */
 	alarm (SESSION_DURATION/2);
+
 
 	/* Establish a handler for SIGINT */
 	signal(SIGINT, sigint_handler);
@@ -111,6 +118,14 @@ int main(int argc, char **argv){
 
 	// Init soap environment
 	soap_init(&soap);
+
+	soap.send_timeout = 60; // 60 seconds
+	soap.recv_timeout = 60;	// server stops after 1 hour of inactivity
+	soap.accept_timeout = 3600;  // max keep-alive sequence
+	soap.max_keep_alive = 100;
+	void *process_request(void*);
+	struct soap *tsoap;
+	pthread_t tid;
 
 	// Cargamos la información de usuarios
 	if (usr__loadListaUsuarios(&lu) == -1) exit(-1);
@@ -137,6 +152,8 @@ int main(int argc, char **argv){
   		soap_print_fault(&soap, stderr);
 		exit(-1);
 	}
+
+	fprintf(stderr, "Socket connection successful %d\n", m);
 
 	char opcion = -1;
 	while (opcion != '5') {
@@ -198,16 +215,28 @@ int main(int argc, char **argv){
 		sigaddset(&grupo, SIGINT);
 		sigprocmask(SIG_BLOCK, &grupo, NULL);
 
-		if (s < 0) {
-			soap_print_fault(&soap, stderr);
-			exit(-1);
-		}
+		if (!soap_valid_socket(s))
+		  {
+			  if (soap.errnum)
+			  {
+				  soap_print_fault(&soap, stderr);
+				  exit(1);
+			  }
+			  fprintf(stderr, "server timed out\n");
+			  break;
+		  }
 
 		// Execute invoked operation
 		soap_serve(&soap);
 
 		// Clean up!
 		soap_end(&soap);
+
+		tsoap = soap_copy(&soap);
+      if (!tsoap)
+         break;
+
+      pthread_create(&tid, NULL, (void*(*)(void*))process_request, (void*)tsoap);
 
 		// Guardar los posibles cambios en fichero.
 		usr__saveListaUsuarios(&lu);
@@ -227,9 +256,20 @@ int main(int argc, char **argv){
 		// Desenmascarar SIGINIT
 		sigprocmask(SIG_UNBLOCK, &grupo, NULL);
 	}
+	soap_done(&soap); // detach soap struct
 	return 0;
 }
 
+void *process_request(void *soap)
+{
+   pthread_detach(pthread_self());
+   soap_serve((struct soap*)soap);
+   soap_destroy((struct soap*)soap); // dealloc C++ data
+   soap_end((struct soap*)soap); // dealloc data and clean up
+   soap_done((struct soap*)soap); // detach soap struct
+   free(soap);
+   return NULL;
+}
 
 /**
  * Comprueba si la sesión de un usuario ha expirado.
