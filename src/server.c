@@ -20,7 +20,6 @@
 // Tipos, constantes y variables globales
 // -----------------------------------------------------------------------------
 #define DEBUG_MODE 1
-#define DEBUG_SIGINT 0
 #define ALARMA_TIRAR_SESIONES 0	/* SIGALARM handler, type 1 */
 #define ALARMA_CHECK_SESIONES 1	/* SIGALARM handler, type 2 */
 #define SESSION_DURATION 500		/* Client session duration  */
@@ -45,7 +44,7 @@ void alarm_handler(int sig) {
 
 	if (TIPO_ALARMA == ALARMA_TIRAR_SESIONES) {
 
-		printf("(!!!) TIRAR SESIONES.\n");
+		if (DEBUG_MODE) printf("(!!!) TIRAR SESIONES.\n");
 		int i;
 		for (i = 0; i < MAX_USERS; i++)
 			sesiones_expiradas[i] = 1;
@@ -56,7 +55,7 @@ void alarm_handler(int sig) {
 	}
 	else if (TIPO_ALARMA == ALARMA_CHECK_SESIONES) {
 
-		printf("(!!!) CHECK SESIONES.\n");
+		if (DEBUG_MODE) printf("(!!!) CHECK SESIONES.\n");
 		check_sessions = 1;
 		// Poner la siguiente alarma, alternando.
 		TIPO_ALARMA = ALARMA_TIRAR_SESIONES;
@@ -67,7 +66,7 @@ void alarm_handler(int sig) {
 /* SIGINT handler */
 void sigint_handler(int sig) {
 	exit_thread = 1;
-	signal(SIGINT, SIG_DFL);		// Reset to default handler
+	signal(SIGINT, SIG_DFL);	// Reset to default handler
 	kill(getpid(), SIGINT);		// Launch SIGINT again
 }
 
@@ -88,7 +87,6 @@ int main(int argc, char **argv){
 
 	sigset_t grupo;		// grupo para enmascarar SIGINT
 	pthread_t th_comprueba_sesiones;
-
 
 	if (argc < 2) {
 		printf("Usage: %s <port>\n",argv[0]);
@@ -119,8 +117,8 @@ int main(int argc, char **argv){
 	// Init soap environment
 	soap_init(&soap);
 
-	soap.send_timeout = 60; // 60 seconds
-	soap.recv_timeout = 60;	// server stops after 1 hour of inactivity
+	soap.send_timeout = 60; 		// 60 seconds
+	soap.recv_timeout = 60;			// server stops after 1 hour of inactivity
 	soap.accept_timeout = 3600;  // max keep-alive sequence
 	soap.max_keep_alive = 100;
 	void *process_request(void*);
@@ -210,7 +208,6 @@ int main(int argc, char **argv){
 		s = soap_accept(&soap);
 
 		// Enmascarar SIGINT
-		if(DEBUG_SIGINT) printf("Enmascaro SIGINT...\n");
 		sigemptyset(&grupo);
 		sigaddset(&grupo, SIGINT);
 		sigprocmask(SIG_BLOCK, &grupo, NULL);
@@ -244,15 +241,6 @@ int main(int argc, char **argv){
 		frq__savePeticiones(&ap);
 		msg__saveMensajesEnviados(&lmsg);
 
-		// Ver si llego CTRL+C mientras atendíamos una petición.
-		/*sigset_t pendientes;
-		sigpending(&pendientes);
-		if (sigismember(&pendientes, SIGINT)) {
-			printf("SIGINT está en pendientes...\n");
-			printf("Intento cerrar el thread de las comprobaciones...\n");
-			exit_th_check_sessions = 1;
-		}*/
-
 		// Desenmascarar SIGINIT
 		sigprocmask(SIG_UNBLOCK, &grupo, NULL);
 	}
@@ -277,18 +265,14 @@ void *process_request(void *soap)
  */
 int isSessionExpired (char* username) {
 
-	printf("Comprobando si ha expirado la sesión de %s...\n", username);
+	if (DEBUG_MODE) printf("Comprobando si ha expirado la sesión de %s...\n", username);
 
 	int pos = usr__findUsuario(&lu, username, NULL);
 	if (pos >= 0) {
-		if (lu.usuarios[pos].connected == 0) {
-			printf("El usuario figura como NO conectado.\n");
+		if (lu.usuarios[pos].connected == 0)
 			return 1;
-		}
-		else {
-			printf("El usuario figura como conectado.\n");
+		else
 			return 0;
-		}
 	}
 	return 1;
 }
@@ -301,8 +285,11 @@ void renewSession(char* username) {
 	int pos = usr__findUsuario(&lu, username, NULL);
 	if (pos >= 0)
 		sesiones_expiradas[pos] = 0;
-	printf("Reactivando sesión de %s\n", username);
-	printf("sesiones_expiradas[%d] = %d\n", pos, sesiones_expiradas[pos]);
+
+	if (DEBUG_MODE) {
+		printf("Reactivando sesión de %s\n", username);
+		printf("sesiones_expiradas[%d] = %d\n", pos, sesiones_expiradas[pos]);
+	}
 }
 
 /**
@@ -312,7 +299,7 @@ void* th_check_sessions(void* arg) {
 
 	while (!exit_thread) {
 		if (check_sessions == 1) {
-			printf("La hebra comprueba las sesiones inactivas...\n");
+			if (DEBUG_MODE) printf("La hebra comprueba las sesiones inactivas...\n");
 			int i;
 			for (i = 0; i < MAX_USERS; i++) {
 				if (sesiones_expiradas[i] == 1)
@@ -321,6 +308,6 @@ void* th_check_sessions(void* arg) {
 			check_sessions = 0;
 		}
 	}
-	printf("th_check_sessions makes exit...\n");
+	if (DEBUG_MODE) printf("th_check_sessions makes exit...\n");
 	pthread_exit(0);
 }
