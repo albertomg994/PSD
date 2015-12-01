@@ -7,7 +7,6 @@
 // Tipos, constantes y estructuras propias del cliente
 // -----------------------------------------------------------------------------
 #define DEBUG_MODE 1
-#define LOCALHOST "http://localhost:\0"
 
 struct MisAmigos {
 	int nElems;
@@ -18,9 +17,9 @@ struct MisAmigos {
 // Variables globales
 // -----------------------------------------------------------------------------
 struct soap soap;
-char serverURL[50];
 char username_global[IMS_MAX_NAME_SIZE];
 struct MisAmigos mis_amigos;
+char* serverURL;
 
 // -----------------------------------------------------------------------------
 // Cabeceras de funciones
@@ -48,24 +47,23 @@ void menuAvanzado();
 // -----------------------------------------------------------------------------
 int main(int argc, char **argv) {
 
-	char* port;
+
 
 	// Usage
-	if (argc != 2) { // Desaparece
-		printf("Usage: %s port\n",argv[0]);
-		exit(0);
-	}
+  	if (argc != 2) {
+    	   printf("Usage: %s http://server:port\n",argv[0]);
+    	   exit(0);
+  	}
+
+	// Init gSOAP environment
+  	soap_init(&soap);
+
+	// Obtain server address
+	serverURL = argv[1];
 
 	// 1. Init gSOAP environment
   	soap_init(&soap);
 
-	// 2. Obtain server address & port
-	port = argv[1];
-	serverURL[0] = '\0';
-	strcpy(serverURL, LOCALHOST);
-	strcat(serverURL, port);
-
-	// Debug?
 	if (DEBUG_MODE){
 		printf ("Server to be used by client: %s\n", serverURL);
 	}
@@ -274,7 +272,6 @@ void enviarMensaje() {
 	/*Para que lo lea con los espacios.*/
 	fgets (text,255,stdin);
 	text[strlen(text)] = '\0';
-	//clean_stdin();
 	mensaje.msg = malloc (IMS_MAX_MSG_SIZE);
 	strcpy (mensaje.msg, text);
 
@@ -289,16 +286,17 @@ void enviarMensaje() {
 	clean_stdin();
 	mensaje.receptor = malloc (IMS_MAX_NAME_SIZE);
 	strcpy(mensaje.receptor, receptor);
+
 	// Comprobar que el receptor es tu amigo
 	for (i = 0; i < mis_amigos.nElems && !find; i++){
 		if( strcmp( mis_amigos.amigos[i],mensaje.receptor) == 0)
 			find=1;
 	}
+
 	//para comprobar si en el servidor funciona la comprobación
-	//find=1;
-	if(!find){
+	if (!find) {
 		printf("	ERROR: El receptor no es tu amigo. =( \n");
-	}else{
+	} else {
 		// 4. Llamada gSOAP
 		soap_call_ims__sendMessage (&soap, serverURL, "", mensaje, &res);
 
