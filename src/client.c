@@ -2,6 +2,7 @@
 #include "imsService.nsmap"
 #include "externo.h"
 #include <string.h>
+#include <signal.h>
 
 // -----------------------------------------------------------------------------
 // Tipos, constantes y estructuras propias del cliente
@@ -20,6 +21,7 @@ struct soap soap;
 char username_global[IMS_MAX_NAME_SIZE];
 struct MisAmigos mis_amigos;
 char* serverURL;
+sigset_t grupo;		// grupo para enmascarar SIGINT
 
 // -----------------------------------------------------------------------------
 // Cabeceras de funciones
@@ -47,8 +49,6 @@ void menuAvanzado();
 // -----------------------------------------------------------------------------
 int main(int argc, char **argv) {
 
-
-
 	// Usage
   	if (argc != 2) {
     	   printf("Usage: %s http://server:port\n",argv[0]);
@@ -61,20 +61,26 @@ int main(int argc, char **argv) {
 	// Obtain server address
 	serverURL = argv[1];
 
-	// 1. Init gSOAP environment
+	// Init gSOAP environment
   	soap_init(&soap);
 
 	if (DEBUG_MODE){
 		printf ("Server to be used by client: %s\n", serverURL);
 	}
 
+	// Preparar el grupo de SIGINT
+	sigemptyset(&grupo);
+	sigaddset(&grupo, SIGINT);
+
 	char opcion;
 	do {
 		printf("1.- Registrarse\n");
 		printf("2.- Iniciar sesión\n");
 		printf("3.- Salir\n");
+
 		opcion = getchar();
 		clean_stdin();
+
 		switch(opcion) {
 			case '1':
 				registrarse();
@@ -112,6 +118,7 @@ void registrarse() {
 	clean_stdin();
 
 	// 2. Llamar a gSOAP
+	sigprocmask(SIG_BLOCK, &grupo, NULL); // Enmascarar SIGINIT
    soap_call_ims__darAlta (&soap, serverURL, "", name, &res);
 
 	// 3. Control de errores
@@ -122,6 +129,9 @@ void registrarse() {
 
 	// 4. Resultado de la llamada:
 	printf("%s\n", res.msg);
+
+	// Desenmascarar SIGINIT
+	sigprocmask(SIG_UNBLOCK, &grupo, NULL);
 }
 
 /**
@@ -160,6 +170,7 @@ void iniciarSesion() {
 	clean_stdin();
 
 	// 2. Llamar a gSOAP
+	sigprocmask(SIG_BLOCK, &grupo, NULL); // Enmascarar SIGINIT
 	soap_call_ims__login (&soap, serverURL, "", username_global, &res);
 
 	// 3. Control de errores
@@ -170,6 +181,9 @@ void iniciarSesion() {
 
 	// 4. Resultado de la llamada
 	printf("%s\n", res.msg);
+
+	// Desenmascarar SIGINIT
+	sigprocmask(SIG_UNBLOCK, &grupo, NULL);
 
 	// 5. Si el inicio de sesión fue correcto, seguimos
 	if (res.code >= 0) {
@@ -228,6 +242,10 @@ void menuAvanzado() {
 			default:
 				break;
 		}
+
+		// Desenmascarar SIGINIT
+		sigprocmask(SIG_UNBLOCK, &grupo, NULL);
+
 	} while (opcion != '7'  && opcion != '8');
 }
 
