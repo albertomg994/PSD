@@ -2,12 +2,12 @@
 #include "imsService.nsmap"
 #include "externo.h"
 #include <string.h>
+#include <signal.h>
 
 // -----------------------------------------------------------------------------
 // Tipos, constantes y estructuras propias del cliente
 // -----------------------------------------------------------------------------
 #define DEBUG_MODE 1
-#define LOCALHOST "http://localhost:\0"
 
 struct MisAmigos {
 	int nElems;
@@ -18,9 +18,10 @@ struct MisAmigos {
 // Variables globales
 // -----------------------------------------------------------------------------
 struct soap soap;
-char serverURL[50];
 char username_global[IMS_MAX_NAME_SIZE];
 struct MisAmigos mis_amigos;
+char* serverURL;
+sigset_t grupo;		// grupo para enmascarar SIGINT
 
 // -----------------------------------------------------------------------------
 // Cabeceras de funciones
@@ -48,35 +49,38 @@ void menuAvanzado();
 // -----------------------------------------------------------------------------
 int main(int argc, char **argv) {
 
-	char* port;
-
 	// Usage
-	if (argc != 2) { // Desaparece
-		printf("Usage: %s port\n",argv[0]);
-		exit(0);
-	}
+  	if (argc != 2) {
+    	   printf("Usage: %s http://server:port\n",argv[0]);
+    	   exit(0);
+  	}
 
-	// 1. Init gSOAP environment
+	// Init gSOAP environment
   	soap_init(&soap);
 
-	// 2. Obtain server address & port
-	port = argv[1];
-	serverURL[0] = '\0';
-	strcpy(serverURL, LOCALHOST);
-	strcat(serverURL, port);
+	// Obtain server address
+	serverURL = argv[1];
 
-	// Debug?
+	// Init gSOAP environment
+  	soap_init(&soap);
+
 	if (DEBUG_MODE){
 		printf ("Server to be used by client: %s\n", serverURL);
 	}
+
+	// Preparar el grupo de SIGINT
+	sigemptyset(&grupo);
+	sigaddset(&grupo, SIGINT);
 
 	char opcion;
 	do {
 		printf("1.- Registrarse\n");
 		printf("2.- Iniciar sesión\n");
 		printf("3.- Salir\n");
+
 		opcion = getchar();
 		clean_stdin();
+
 		switch(opcion) {
 			case '1':
 				registrarse();
@@ -114,6 +118,7 @@ void registrarse() {
 	clean_stdin();
 
 	// 2. Llamar a gSOAP
+	sigprocmask(SIG_BLOCK, &grupo, NULL); // Enmascarar SIGINIT
    soap_call_ims__darAlta (&soap, serverURL, "", name, &res);
 
 	// 3. Control de errores
@@ -124,6 +129,9 @@ void registrarse() {
 
 	// 4. Resultado de la llamada:
 	printf("%s\n", res.msg);
+
+	// Desenmascarar SIGINIT
+	sigprocmask(SIG_UNBLOCK, &grupo, NULL);
 }
 
 /**
@@ -162,6 +170,7 @@ void iniciarSesion() {
 	clean_stdin();
 
 	// 2. Llamar a gSOAP
+	sigprocmask(SIG_BLOCK, &grupo, NULL); // Enmascarar SIGINIT
 	soap_call_ims__login (&soap, serverURL, "", username_global, &res);
 
 	// 3. Control de errores
@@ -172,6 +181,9 @@ void iniciarSesion() {
 
 	// 4. Resultado de la llamada
 	printf("%s\n", res.msg);
+
+	// Desenmascarar SIGINIT
+	sigprocmask(SIG_UNBLOCK, &grupo, NULL);
 
 	// 5. Si el inicio de sesión fue correcto, seguimos
 	if (res.code >= 0) {
@@ -230,6 +242,10 @@ void menuAvanzado() {
 			default:
 				break;
 		}
+
+		// Desenmascarar SIGINIT
+		sigprocmask(SIG_UNBLOCK, &grupo, NULL);
+
 	} while (opcion != '7'  && opcion != '8');
 }
 
@@ -274,7 +290,6 @@ void enviarMensaje() {
 	/*Para que lo lea con los espacios.*/
 	fgets (text,255,stdin);
 	text[strlen(text)] = '\0';
-	//clean_stdin();
 	mensaje.msg = malloc (IMS_MAX_MSG_SIZE);
 	strcpy (mensaje.msg, text);
 
@@ -289,16 +304,17 @@ void enviarMensaje() {
 	clean_stdin();
 	mensaje.receptor = malloc (IMS_MAX_NAME_SIZE);
 	strcpy(mensaje.receptor, receptor);
+
 	// Comprobar que el receptor es tu amigo
 	for (i = 0; i < mis_amigos.nElems && !find; i++){
 		if( strcmp( mis_amigos.amigos[i],mensaje.receptor) == 0)
 			find=1;
 	}
+
 	//para comprobar si en el servidor funciona la comprobación
-	//find=1;
-	if(!find){
+	if (!find) {
 		printf("	ERROR: El receptor no es tu amigo. =( \n");
-	}else{
+	} else {
 		// 4. Llamada gSOAP
 		soap_call_ims__sendMessage (&soap, serverURL, "", mensaje, &res);
 
