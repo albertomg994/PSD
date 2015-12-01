@@ -35,7 +35,7 @@ volatile int sesiones_expiradas [MAX_USERS];
 volatile sig_atomic_t check_sessions;
 volatile sig_atomic_t TIPO_ALARMA;
 volatile sig_atomic_t exit_thread;
-
+pthread_mutex_t mtx;
 // -----------------------------------------------------------------------------
 // Signal Handlers
 // -----------------------------------------------------------------------------
@@ -77,6 +77,7 @@ void sigint_handler(int sig) {
 void renewSession (char* username);
 int  isSessionExpired (char* username);
 void* th_check_sessions (void* arg);
+void *process_request(void*);
 
 // -----------------------------------------------------------------------------
 // Main
@@ -123,7 +124,7 @@ int main(int argc, char **argv){
 	soap.recv_timeout = 60;	// server stops after 1 hour of inactivity
 	soap.accept_timeout = 3600;  // max keep-alive sequence
 	soap.max_keep_alive = 100;
-	void *process_request(void*);
+
 	struct soap *tsoap;
 	pthread_t tid;
 
@@ -238,11 +239,7 @@ int main(int argc, char **argv){
 
       pthread_create(&tid, NULL, (void*(*)(void*))process_request, (void*)tsoap);
 
-		// Guardar los posibles cambios en fichero.
-		usr__saveListaUsuarios(&lu);
-		frd__saveFriendsData(&la);
-		frq__savePeticiones(&ap);
-		msg__saveMensajesEnviados(&lmsg);
+
 
 		// Ver si llego CTRL+C mientras atendíamos una petición.
 		/*sigset_t pendientes;
@@ -254,6 +251,16 @@ int main(int argc, char **argv){
 		}*/
 
 		// Desenmascarar SIGINIT
+
+		pthread_mutex_init(&mtx, NULL);
+		// Guardar los posibles cambios en fichero.
+		usr__saveListaUsuarios(&lu);
+		frd__saveFriendsData(&la);
+		frq__savePeticiones(&ap);
+		msg__saveMensajesEnviados(&lmsg);
+
+		pthread_mutex_destroy(&mtx);
+		
 		sigprocmask(SIG_UNBLOCK, &grupo, NULL);
 	}
 	soap_done(&soap); // detach soap struct
@@ -268,6 +275,7 @@ void *process_request(void *soap)
    soap_end((struct soap*)soap); // dealloc data and clean up
    soap_done((struct soap*)soap); // detach soap struct
    free(soap);
+
    return NULL;
 }
 

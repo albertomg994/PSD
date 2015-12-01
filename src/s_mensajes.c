@@ -26,8 +26,7 @@ int msg__loadMensajesEnviados(struct ListasMensajes* lmsg){
 	if (fichero == NULL) {
 		printf("No se encuentra el fichero \"Server/mensajes_enviados.txt\"\n");
 		return -1;
-	} /*else
-		printf("Fichero \"Server/mensajes_enviados.txt\" abierto correctamente.\n");*/
+	}
 
 	// Leer los usuarios hasta fin de fichero
 	char c = fgetc(fichero);
@@ -82,9 +81,9 @@ int msg__saveMensajesEnviados(struct ListasMensajes* lmsg){
 	if (fichero == NULL) {
 		printf("No se encuentra el fichero \"Server/mensajes_enviados.txt\"\n");
 		return -1;
-	} /*else
-		printf("Fichero \"Server/mensajes_enviados.txt\" abierto correctamente.\n");*/
-      // Escribir los datos
+	}
+
+   // Escribir los datos
    int i;
    for (i = 0; i < lmsg->size; i++) {
    	fwrite(lmsg->lista[i].emisor, strlen(lmsg->lista[i].emisor), 1, fichero);
@@ -94,7 +93,7 @@ int msg__saveMensajesEnviados(struct ListasMensajes* lmsg){
       fwrite(lmsg->lista[i].msg, strlen(lmsg->lista[i].msg), 1, fichero);
    }
 
-   	// Cerrar el fichero
+   // Cerrar el fichero
    if(fclose(fichero) != 0) {
    	printf("Error cerrando el fichero \"Server/mensajes_enviados.txt\".\n");
    	return -1;
@@ -159,21 +158,18 @@ int sendMessage (struct Message2 myMessage){
 	if (fichero == NULL) {
 		printf("No se encuentra el fichero \"mensajes_pendientes.txt.txt\"\n");
 		return -1;
-	} /*else
-		printf("Fichero abierto correctamente.\n");*/
+	}
 
 	fwrite(myMessage.emisor, strlen(myMessage.emisor), 1, fichero);
 	fputc(' ',fichero);
 	fwrite(myMessage.msg, strlen(myMessage.msg), 1, fichero);
-
-	//printf("Escribimos en el fichero \"mensajes_pendientes.txt.txt\".\n");
 
 	// Cerrar el fichero
 	if(fclose(fichero) != 0) {
       printf("Error cerrando el fichero \"mensajes_pendientes.txt\".\n");
 		return -1;
 	}
-	//printf("Fichero cerrado.\n");
+
 	chdir("..");
    chdir("..");
 
