@@ -236,19 +236,17 @@ int main(int argc, char **argv){
 
       pthread_create(&tid, NULL, (void*(*)(void*))process_request, (void*)tsoap);
 
-
-
-		// Desenmascarar SIGINIT
-
-		pthread_mutex_init(&mtx, NULL);
 		// Guardar los posibles cambios en fichero.
+		pthread_mutex_init(&mtx, NULL);
+
 		usr__saveListaUsuarios(&lu);
 		frd__saveFriendsData(&la);
 		frq__savePeticiones(&ap);
 		msg__saveMensajesEnviados(&lmsg);
 
 		pthread_mutex_destroy(&mtx);
-		
+
+		// Desenmascarar SIGINIT
 		sigprocmask(SIG_UNBLOCK, &grupo, NULL);
 	}
 	soap_done(&soap); // detach soap struct
