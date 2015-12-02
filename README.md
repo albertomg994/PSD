@@ -63,7 +63,7 @@
       <p>Ejecución:</p>
       <pre><code> > ./server [puerto] </code></pre>
       <p> Por ejemplo: </p>
-      <pre><code> > ./serer 5000 </code></pre>
+      <pre><code> > ./server 5000 </code></pre>
     </li>
   </ol>
 ## Compilación y ejecución del cliente
