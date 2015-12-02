@@ -2,10 +2,48 @@
 
 ## Preparación del entorno (Ubuntu, Linux)
 <ol>
-  <li><p>Descargar la version 2.8.24 de gsoap</p></li>
-  <li><p>Descomprimir en el $HOME del usuario que va a utilizarlo.</p></li>
+  <li>
+    <p>Descargar la version 2.8.24 de <a href="http://sourceforge.net/projects/gsoap2/files/">gsoap</a></p>
+  </li>
+  <li>
+    <p>Copiar el fichero <code>gsoap_2.8.24.zip</code> en <code>$HOME</code></p>
+  </li>
+  <li>
+    <p>Descomprimir con:</p>
+    <p><pre><code> > unzipgsoap_2.8.24.zip</code></pre></p>
+    <p>Se generará un directorio gsoap-2.8</p>
+  </li>
   <li><p>Instalar los siguientes paquetes:</p>
-      <pre><code> $ sudo apt-get install bison flex byacc openssl g++ libssl-dev </code></pre>
+      <pre><code> > sudo apt-get install bison flex byacc openssl g++ libssl-dev </code></pre>
+  </li>
+  <li>
+    <p>Configurar la instalación:</p>
+    <code>./configure</code>
+  </li>
+  <li>
+    <p>Compilamos:</p>
+    <p><code>make</code></p>
+  </li>
+  <li>
+    <p>Creamos el directorio para la instalación:</p>
+    <p><code> > mkdir $HOME/gsoap-linux_2.8.24 </code></p>
+  </li>
+  <li>
+    <p>Instalamos:</p>
+    <p><code>make install exec_prefix=$HOME/gsoap-linux_2.8.24</code></p>
+    <p>Si hay probelmas de permisos:</p>
+    <p><code> > sudo make install exec_prefix=$HOME/gsoap-linux_2.8.24 </code></p>
+  </li>
+  
+  <li>
+    <p>Incluimos en $HOME/.bashrc</p>
+    <pre><code>
+      > export GSOAP_HOME=$HOME/gsoap-linux_2.8.24
+      > export GSOAP_LIB=${GSOAP_HOME}/lib
+      > export GSOAP_INCLUDE=${GSOAP_HOME}/include
+      > PATH=$PATH:$GSOAP_HOME/bin
+    </code></pre>
+    
   </li>
 </ol>
 ## Compilación
