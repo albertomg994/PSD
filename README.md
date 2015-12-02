@@ -60,7 +60,9 @@
     </li>
     <li>
       <p>Ejecución:</p>
-      <pre><code> > ./server <puerto> </code></pre>
+      <pre><code> > ./server [puerto] </code></pre>
+      <p> Por ejemplo: </p>
+      <pre><code> > ./serer 5000 </code></pre>
     </li>
   </ol>
 ## Compilación y ejecución del cliente
@@ -76,7 +78,7 @@
     </li>
     <li>
       <p>Ejecución:</p>
-      <pre><code> > ./client <URL + puerto> </code></pre>
+      <pre><code> > ./client [URL + puerto] </code></pre>
       <p> Por ejemplo: </p>
       <pre><code> > ./client http://192.168.0.35:5000 </code></pre>
     </li>
