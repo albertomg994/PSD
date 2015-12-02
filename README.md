@@ -1,11 +1,13 @@
 # Servicio de Mensajería Instantánea - PSD
 
 ## Preparación del entorno (Ubuntu, Linux)
-  1. Descargar la version 2.8.24 de gsoap
-  2. Descomprimir en el $HOME del usuario que va a utilizarlo.
-  3. Instalar los siguientes paquetes:
-    <pre><code> $ sudo apt-get install bison flex byacc openssl g++ libssl-dev </code></pre>
-
+<ol>
+  <li><p><Descargar la version 2.8.24 de gsoap</p></li>
+  <li>Descomprimir en el $HOME del usuario que va a utilizarlo.</li>
+  <li><p>Instalar los siguientes paquetes:</p>
+      <pre><code> $ sudo apt-get install bison flex byacc openssl g++ libssl-dev </code></pre>
+  </li>
+</ol>
 ## Compilación
   1. Generamos los stubs a partir de la interfaz remota (fichero: interfaz.h):
     <pre><code> $ soapcpp2 -c calc.h. </code></pre>
