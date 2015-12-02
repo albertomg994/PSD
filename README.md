@@ -7,6 +7,7 @@
   </li>
   <li>
     <p>Copiar el fichero gsoap_2.8.24.zip en $HOME</p>
+    <pre><code> > cp gsoap_2.8.24.zip $HOME </code></pre>
   </li>
   <li>
     <p>Descomprimir con:</p>
@@ -55,7 +56,7 @@
     </li>
     <li>
       <p>Compilamos</p>
-      <pre><code> > make </code></pre>
+      <pre><code> > make server </code></pre>
       <p> Generará un ejecutable llamado 'servidor' </p>
     </li>
     <li>
@@ -73,7 +74,7 @@
     </li>
     <li>
       <p>Compilamos</p>
-      <pre><code> > make </code></pre>
+      <pre><code> > make client </code></pre>
       <p> Generará un ejecutable llamado 'cliente' </p>
     </li>
     <li>
