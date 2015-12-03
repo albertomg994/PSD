@@ -14,6 +14,7 @@ void s_mensajes()
 
 int msg__loadMensajesEnviados(struct ListasMensajes* lmsg){
 
+   printf("loadMessageList()\n");
    FILE *fichero;
 	char emisor[IMS_MAX_NAME_SIZE];
    char receptor[IMS_MAX_NAME_SIZE];
@@ -24,8 +25,12 @@ int msg__loadMensajesEnviados(struct ListasMensajes* lmsg){
 	fichero = fopen("Server/mensajes_enviados.txt", "rt");
 
 	if (fichero == NULL) {
-		printf("No se encuentra el fichero \"Server/mensajes_enviados.txt\"\n");
-		return -1;
+      //Lo creamos si no existe
+      fichero = fopen("Server/mensajes_enviados.txt", "wt");
+      if(fichero == NULL){
+         printf("No se puede abrir/crear el fichero \"Server/mensajes_enviados.txt\"\n");
+         return -1;
+      }
 	}
 
 	// Leer los usuarios hasta fin de fichero
@@ -71,6 +76,8 @@ int msg__loadMensajesEnviados(struct ListasMensajes* lmsg){
 }
 
 int msg__saveMensajesEnviados(struct ListasMensajes* lmsg){
+
+   printf("saveMessageList()\n");
    FILE *fichero;
 	char line[IMS_MAX_NAME_SIZE];
 	int nUsr = 0;

@@ -10,6 +10,8 @@
  */
 int frq__loadPeticiones(struct ListaAmistadesPend* ap) {
 
+	printf("loadFriendsPeticiones()\n");
+
 	FILE *fichero;
 	char line[IMS_MAX_NAME_SIZE + 1];
 
@@ -17,10 +19,14 @@ int frq__loadPeticiones(struct ListaAmistadesPend* ap) {
 	fichero = fopen("Server/peticiones_pendientes.txt", "rt");
 
 	if (fichero == NULL) {
-		printf("No se encuentra el fichero \"Server/peticiones_pendientes.txt\"\n");
-		return -1;
-	} /*else
-		printf("Server/peticiones_pendientes.txt abierto correctamente.\n");*/
+		//Lo creamos si no existe
+		fichero = fopen("Server/peticiones_pendientes.txt", "wt");
+		if ( fichero == NULL ) {
+			printf("No se puede abrir/crear el fichero \"Server/peticiones_pendientes.txt\"\n");
+			return -1;
+		}
+	}
+
 
 	// Leer los usuarios y sus amigos hasta fin de fichero
 	int nPeticiones = 0;
@@ -58,6 +64,8 @@ int frq__loadPeticiones(struct ListaAmistadesPend* ap) {
  */
 int frq__savePeticiones(struct ListaAmistadesPend* ap) {
 
+	printf("saveFriendsPeticiones()\n");
+
 	// Abrir el fichero (sobrescribe)
 	FILE* fichero = fopen("Server/peticiones_pendientes.txt", "wt");
 
@@ -65,8 +73,7 @@ int frq__savePeticiones(struct ListaAmistadesPend* ap) {
 	if (fichero == NULL) {
 		printf("No se encuentra el fichero \"Server/peticiones_pendientes.txt\"\n");
 		return -1;
-	} /*else
-		printf("peticones_pendientes.txt abierto correctamente.\n");*/
+	}
 
 	// Escribir los datos
 	int i;
@@ -261,6 +268,8 @@ void frq__delUserRelatedFriendRequests(struct ListaAmistadesPend* ap, xsd__strin
  */
 int frd__loadFriendsData(struct ListasAmigos* la) {
 
+	printf("loadFriendsData()\n");
+
 	FILE *fichero;
 	char line[IMS_MAX_NAME_SIZE*MAX_USERS + 1];
 
@@ -268,10 +277,13 @@ int frd__loadFriendsData(struct ListasAmigos* la) {
 	fichero = fopen("Server/listas_amigos.txt", "rt");
 
 	if (fichero == NULL) {
-		printf("No se encuentra el fichero \"Server/listas_amigos.txt\"\n");
-		return -1;
-	} else
-		printf("Server/listas_amigos.txt abierto correctamente.\n");
+		//Lo creamos si no existe
+		fichero = fopen("Server/listas_amigos.txt", "wt");
+		if ( fichero == NULL ) {
+			printf("No se puede abrir/crear el fichero \"Server/listas_amigos.txt\"\n");
+			return -1;
+		}
+	}
 
 	// Leer los usuarios y sus amigos hasta fin de fichero
 	int nUsr = 0;
@@ -323,8 +335,7 @@ int frd__saveFriendsData(struct ListasAmigos* la) {
 	if (fichero == NULL) {
 		printf("No se encuentra el fichero \"Server/listas_amigos.txt\"\n");
 		return -1;
-	} else
-		printf("Server/listas_amigos.txt abierto correctamente.\n");
+	}
 
 	// Escribir los datos
 	int i, j, numAmigos, numUsuarios = la->size;

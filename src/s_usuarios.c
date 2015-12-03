@@ -16,6 +16,7 @@
  */
 int usr__loadListaUsuarios(struct ListaUsuarios* lu) {
 
+	printf("loadUserList()\n");
 	FILE *fichero;
 	char line[IMS_MAX_NAME_SIZE];
 	int nUsr = 0;
@@ -24,11 +25,13 @@ int usr__loadListaUsuarios(struct ListaUsuarios* lu) {
 	fichero = fopen("Server/usuarios.txt", "rt");
 
 	if (fichero == NULL) {
-		printf("No se encuentra el fichero \"Server/usuarios.txt\"\n");
-		return -1;
-	} /*else
-		printf("Fichero \"Server/usuarios.txt\" abierto correctamente.\n");*/
-
+		//Lo creamos si no existe
+		fichero = fopen("Server/usuarios.txt", "wt");
+		if(fichero == NULL ){
+			printf("No se puede abrir/crear el fichero \"Server/usuarios.txt\"\n");
+			return -1;
+		}
+	}
 	// Leer los usuarios hasta fin de fichero
 	char c = fgetc(fichero);
 	while (c != EOF) {
@@ -74,6 +77,8 @@ int usr__loadListaUsuarios(struct ListaUsuarios* lu) {
  */
 int usr__saveListaUsuarios(struct ListaUsuarios* lu) {
 
+	printf("saveUserList()\n");
+
 	FILE* fichero;
 
 	// Abrir el fichero (sobrescribe)
@@ -82,8 +87,7 @@ int usr__saveListaUsuarios(struct ListaUsuarios* lu) {
 	if (fichero == NULL) {
 		printf("No se encuentra el fichero \"Server/usuarios.txt\"\n");
 		return -1;
-	} /*else
-		printf("Fichero \"Server/usuarios.txt\" abierto correctamente.\n");*/
+	}
 
 	// Escribir los datos
 	int i;
