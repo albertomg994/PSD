@@ -46,14 +46,14 @@ struct ListaPeticiones {
 
 /* Lista de amigos de un usuario. */
 struct ListaAmigos {
-	int nElems;
+	int size;
 	xsd__string amigos;
 	int code;			// Código de error o éxito
 	xsd__string msg;	// Mensaje asociado al código
 };
 
 struct ListaMensajes {
-	int nElems;
+	int size;
 	xsd__string mensajes;
 	int code;				// Código de error o éxito
 	xsd__string msg;		// Mensaje asociado al código
@@ -72,7 +72,7 @@ struct ResultMsg {
 // Enviar un mensaje a un usuario
 int ims__sendMessage (struct Message2 myMessage, struct ResultMsg *result);
 
-// Recibir un mensaje de prueba
+// Recibir mensajes
 int ims__receiveMessage (char* username, struct ListaMensajes* result);
 
 //Confirmar mensaje
@@ -93,11 +93,8 @@ int ims__logout (char* username, struct ResultMsg *result);
 // Enviar una petición de amistad
 int ims__sendFriendRequest (struct IMS_PeticionAmistad p, struct ResultMsg* result);
 
-// Enviar una petición de amistad
+// Responder a una petición de amistad
 int ims__answerFriendRequest (struct RespuestaPeticionAmistad rp, struct ResultMsg *result);
-
-// Recibir todos los mensajes
-//int ims__getAllMessages (int* result);
 
 // Recibir todas las peticiones de amistad pendientes
 int ims__getAllFriendRequests (char* username, struct ListaPeticiones *result);

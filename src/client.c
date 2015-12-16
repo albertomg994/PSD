@@ -214,6 +214,9 @@ void menuAvanzado() {
 		opcion = getchar();
 		clean_stdin();
 
+		// Enmascarar SIGINIT
+		sigprocmask(SIG_BLOCK, &grupo, NULL);
+
 		switch(opcion) {
 			case '1':
 				enviarMensaje();

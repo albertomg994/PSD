@@ -154,7 +154,9 @@ int main(int argc, char **argv){
 
 	fprintf(stderr, "Socket connection successful %d\n", m);
 
-	char opcion = -1;
+	// Menu de depuración
+	// ------------------
+	/*char opcion = -1;
 	while (opcion != '5') {
 		printf("\n\ngSOAP server menu\n");
 		printf("=================\n");
@@ -200,7 +202,7 @@ int main(int argc, char **argv){
 			msg__saveMensajesEnviados(&lmsg);
 			exit(0);
 		}
-	}
+	}*/
 
 	// Listen to next connection
 	while (1) {
