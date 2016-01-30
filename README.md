@@ -12,17 +12,17 @@
   <li>
     <p>Descomprimir con:</p>
     <pre><code> > unzip gsoap_2.8.24.zip </code></pre>
-    <p>Se generará un directorio gsoap-2.8</p>
+    <p>Se generará un directorio gsoap-2.8 - Ya podemos borrar el .zip</p>
   </li>
   <li><p>Instalar los siguientes paquetes:</p>
       <pre><code> > sudo apt-get install bison flex byacc openssl g++ libssl-dev </code></pre>
   </li>
   <li>
-    <p>Configurar la instalación:</p>
+    <p>Configurar la instalación (dentro del directorio gsoap-2.8):</p>
     <pre><code> > ./configure </code></pre>
   </li>
   <li>
-    <p>Compilamos:</p>
+    <p>Compilamos (dentro del directorio gsoap-2.8):</p>
     <pre><code> > make </code></pre>
   </li>
   <li>
