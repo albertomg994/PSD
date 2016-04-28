@@ -1,4 +1,13 @@
-# Servicio de Mensajería Instantánea - PSD
+# Servicio de Mensajería Instantánea - IMS
+
+Este es uno de los proyectos elaborados para la asignatura de Programación de Sistemas Distribuidos.
+
+Somos conscientes de lo rudimentarias e ineficientes que son las estructuras de datos utilizadas, así como el uso de memoria estática en vez de dinámica en muchos casos. Debido al poco tiempo disponible para llevar a cabo la práctica y por alejarse del objetivo principal de ésta, consideramos adecuadas estas decisiones de implementación.
+
+Esta código ha sido escrito por:
+
+* [Alberto Miedes Garcés](http://github.com/albertomg994)
+* [Denys Sypko](http://github.com/densypko)
 
 ## Preparación del entorno (Ubuntu, Linux)
 <ol>
